@@ -259,7 +259,7 @@
       <p class="text-2xl font-bold mb-5" id="modal-question"></p>
 
       <div id="host-question-panel" class="host-panel hidden">
-        <p class="text-sm text-yellow-200 font-bold mb-1">🌐 Dieses Board wird live gehostet.</p>
+        <p class="text-sm text-yellow-200 font-bold mb-1"></p>
         <p class="text-xs text-white/70">Frage und Antwort werden automatisch auf den Geräten der beigetretenen Teams angezeigt.</p>
       </div>
       <div id="quick-wrong-area" class="mb-5">
@@ -309,9 +309,15 @@
       <div id="join-current-question" class="bg-[#0f1347] rounded-xl p-4 border border-[#f5c518]/30 mb-4 hidden">
         <p id="join-current-cat" class="text-[#f5c518] font-bold text-sm mb-1"></p>
         <p id="join-current-text" class="text-2xl font-bold mb-3"></p>
+        <div id="join-current-image-container" class="hidden mb-3">
+          <img id="join-current-image" src="" alt="Frage Bild" class="mx-auto max-w-full max-h-[45vh] object-contain rounded-lg bg-[#0a0e2a] border border-[#f5c518]/30">
+        </div>
         <div id="join-current-answer" class="hidden border-t border-[#f5c518]/30 pt-3 mt-3">
           <p class="text-[#f5c518] text-sm">Antwort:</p>
           <p id="join-current-answer-text" class="text-xl font-semibold"></p>
+          <div id="join-current-answer-image-container" class="hidden mt-3">
+            <img id="join-current-answer-image" src="" alt="Antwort Bild" class="mx-auto max-w-full max-h-[35vh] object-contain rounded-lg bg-[#0a0e2a] border border-[#f5c518]/30">
+          </div>
         </div>
       </div>
       <div id="join-scores" class="grid gap-2 mb-4"></div>
@@ -717,8 +723,18 @@ function cleanBoardForPublic(board) {
   });
 }
 
+function cleanBoardForLocal(board) {
+  return (board || []).map(item => ({
+    ...item,
+    image_url: (item.image_url || '').trim(),
+    answer_image_url: (item.answer_image_url || '').trim()
+  }));
+}
+
 function persistBoard(board) {
-  allData = cleanBoardForPublic(board);
+  // Lokal müssen image_key und answer_image_key erhalten bleiben,
+  // sonst verschwinden hochgeladene Bilder nach dem Speichern/Rendern.
+  allData = cleanBoardForLocal(board);
   localStorage.setItem(storageKey(), JSON.stringify(allData));
 }
 
@@ -931,12 +947,24 @@ function getBoard() {
 
 async function getImageSrc(item) {
   if (!item) return '';
-  return (item.image_url || '').trim();
+  const url = (item.image_url || '').trim();
+  if (url) return url;
+  if (item.image_key) {
+    try { return await idbGet(item.image_key); }
+    catch (e) { console.warn('Fragebild konnte nicht aus IndexedDB geladen werden:', e); }
+  }
+  return '';
 }
 
 async function getAnswerImageSrc(item) {
   if (!item) return '';
-  return (item.answer_image_url || '').trim();
+  const url = (item.answer_image_url || '').trim();
+  if (url) return url;
+  if (item.answer_image_key) {
+    try { return await idbGet(item.answer_image_key); }
+    catch (e) { console.warn('Antwortbild konnte nicht aus IndexedDB geladen werden:', e); }
+  }
+  return '';
 }
 
 function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
@@ -1096,8 +1124,8 @@ function renderEditView() {
     col.innerHTML = `<input type="text" value="${escAttr(catItem.category_name)}" data-cat="${c}" class="cat-name bg-[#1a237e] border border-[#f5c518]/50 rounded-lg p-2 text-[#f5c518] font-bold text-center text-sm" placeholder="Kategorie">`;
     for (let q = 0; q < QS; q++) {
       const item = localBoard.find(b => b.category_index === c && b.question_index === q);
-      const hasImage = !!(item.image_url);
-      const hasAnswerImage = !!(item.answer_image_url);
+      const hasImage = !!(item.image_url || item.image_key);
+      const hasAnswerImage = !!(item.answer_image_url || item.answer_image_key);
       col.innerHTML += `
         <div class="bg-[#0f1347] border border-[#f5c518]/20 rounded-lg p-2 space-y-1">
           <p class="text-[#f5c518] text-xs font-bold">${POINTS[q]} Punkte</p>
@@ -1106,6 +1134,10 @@ function renderEditView() {
           <div class="mt-2 border-t border-white/10 pt-2">
             <p class="text-[11px] text-[#f5c518] font-bold">Bild zur Frage</p>
             <input type="text" value="${escAttr(item.image_url || '')}" data-cat="${c}" data-q="${q}" data-field="image_url" class="q-input w-full bg-[#1a237e] border border-white/20 rounded p-1 text-xs text-white mt-1" placeholder="Öffentliche Bild-URL, z.B. ./images/frage1.jpg">
+            <label class="block cursor-pointer bg-[#f5c518] text-[#0a0e2a] rounded p-1 text-center font-bold text-xs mt-1">
+              Bilddatei auswählen
+              <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(${c}, ${q}, this)">
+            </label>
             <div id="preview-${c}-${q}" class="${hasImage ? '' : 'hidden'}">
               <img id="preview-img-${c}-${q}" alt="Fragebild Preview" class="w-full h-24 object-contain rounded mt-1 bg-[#0a0e2a] border border-white/10">
             </div>
@@ -1115,6 +1147,10 @@ function renderEditView() {
           <div class="mt-2 border-t border-white/10 pt-2">
             <p class="text-[11px] text-[#f5c518] font-bold">Bild zur Antwort</p>
             <input type="text" value="${escAttr(item.answer_image_url || '')}" data-cat="${c}" data-q="${q}" data-field="answer_image_url" class="q-input w-full bg-[#1a237e] border border-white/20 rounded p-1 text-xs text-white mt-1" placeholder="Öffentliche Bild-URL, z.B. ./images/antwort1.jpg">
+            <label class="block cursor-pointer bg-[#f5c518] text-[#0a0e2a] rounded p-1 text-center font-bold text-xs mt-1">
+              Antwortbild-Datei auswählen
+              <input type="file" accept="image/*" class="hidden" onchange="handleAnswerImageUpload(${c}, ${q}, this)">
+            </label>
             <div id="answer-preview-${c}-${q}" class="${hasAnswerImage ? '' : 'hidden'}">
               <img id="answer-preview-img-${c}-${q}" alt="Antwortbild Preview" class="w-full h-24 object-contain rounded mt-1 bg-[#0a0e2a] border border-white/10">
             </div>
@@ -1497,8 +1533,26 @@ function getJoinClientId() {
   return id;
 }
 
-function collectHostedState() {
-  const board = cleanBoardForPublic(localBoard && localBoard.length ? localBoard : getBoard());
+async function boardWithResolvedImagesForHosting(board) {
+  const items = cleanBoardForLocal(board || []);
+  const result = [];
+  for (const item of items) {
+    const clean = { ...item };
+    const questionSrc = await getImageSrc(item);
+    const answerSrc = await getAnswerImageSrc(item);
+    clean.image_url = questionSrc || '';
+    clean.answer_image_url = answerSrc || '';
+    delete clean.image_key;
+    delete clean.answer_image_key;
+    delete clean.image_data;
+    delete clean.answer_image_data;
+    result.push(clean);
+  }
+  return result;
+}
+
+async function collectHostedState() {
+  const board = await boardWithResolvedImagesForHosting(localBoard && localBoard.length ? localBoard : getBoard());
   return {
     type: 'jeopardy-board',
     boardId: String(currentBoardId || '1'),
@@ -1516,7 +1570,7 @@ function collectHostedState() {
   };
 }
 
-function createHostedBoardRoom() {
+async function createHostedBoardRoom() {
   if (!players || !players.length) {
     alert('Starte zuerst ein Spiel mit Teams. Danach kannst du das Board hosten.');
     showView('setup');
@@ -1528,7 +1582,7 @@ function createHostedBoardRoom() {
   }
   const fb = getFirebaseTools();
   if (!fb) return;
-  const data = collectHostedState();
+  const data = await collectHostedState();
   fb.set(fb.ref(fb.db, `rooms/${hostedRoomId}`), {
     ...data,
     createdAt: Date.now(),
@@ -1540,11 +1594,12 @@ function createHostedBoardRoom() {
   }).catch(err => alert('Board konnte nicht gehostet werden: ' + err.message));
 }
 
-function syncHostedBoard() {
+async function syncHostedBoard() {
   if (!hostedRoomId) return;
   const fb = getFirebaseTools();
   if (!fb) return;
-  fb.update(fb.ref(fb.db, `rooms/${hostedRoomId}`), collectHostedState()).catch(err => console.warn('Sync fehlgeschlagen:', err));
+  const data = await collectHostedState();
+  fb.update(fb.ref(fb.db, `rooms/${hostedRoomId}`), data).catch(err => console.warn('Sync fehlgeschlagen:', err));
   renderHostBoardPanel();
 }
 
@@ -1739,10 +1794,42 @@ function renderJoinCurrentQuestion(data) {
   box.classList.remove('hidden');
   document.getElementById('join-current-cat').textContent = `${item.category_name} — ${item.points || current.points} Punkte`;
   document.getElementById('join-current-text').textContent = item.question || '';
+
+  const imgBox = document.getElementById('join-current-image-container');
+  const img = document.getElementById('join-current-image');
+  const questionSrc = (item.image_url || '').trim();
+  if (imgBox && img) {
+    if (questionSrc) {
+      img.src = questionSrc;
+      imgBox.classList.remove('hidden');
+    } else {
+      img.removeAttribute('src');
+      imgBox.classList.add('hidden');
+    }
+  }
+
   const answerBox = document.getElementById('join-current-answer');
   document.getElementById('join-current-answer-text').textContent = item.answer || 'Keine Antwort eingetragen.';
   answerBox?.classList.toggle('hidden', !current.answerShown);
+
+  const answerImgBox = document.getElementById('join-current-answer-image-container');
+  const answerImg = document.getElementById('join-current-answer-image');
+  const answerSrc = (item.answer_image_url || '').trim();
+  if (answerImgBox && answerImg) {
+    if (answerSrc && current.answerShown) {
+      answerImg.src = answerSrc;
+      answerImgBox.classList.remove('hidden');
+    } else {
+      answerImg.removeAttribute('src');
+      answerImgBox.classList.add('hidden');
+    }
+  }
 }
+
+window.handleImageUpload = handleImageUpload;
+window.handleAnswerImageUpload = handleAnswerImageUpload;
+window.removeImage = removeImage;
+window.removeAnswerImage = removeAnswerImage;
 
 window.createHostedBoardRoom = createHostedBoardRoom;
 window.syncHostedBoard = syncHostedBoard;
