@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-06-10T16:02:26.122Z",
+  "exported_at": "2026-06-10T16:06:34.429Z",
   "board_count": 1,
   "active_board": "1",
   "boards": [
@@ -12,9 +12,9 @@
           "category_index": 0,
           "question_index": 0,
           "category_name": "Kategorie 1",
-          "question": "",
-          "answer": "",
-          "image_url": "",
+          "question": "5",
+          "answer": "3",
+          "image_url": "images/Minecraft-Kinofilm-Fortsetzung-Sequel-Ankuendigung-Videospiel-Artikelbild-1200x675.webp",
           "answer_image_url": "",
           "points": 100,
           "revealed": false
