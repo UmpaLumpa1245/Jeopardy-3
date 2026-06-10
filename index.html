@@ -143,6 +143,18 @@
   outline: 3px solid #f5c518;
   transform: scale(1.02);
 }
+.team-choice-btn.locked {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.team-choice-confirmed {
+  background: rgba(34,197,94,.18);
+  border: 1px solid rgba(34,197,94,.55);
+  border-radius: .85rem;
+  padding: .75rem;
+  color: #bbf7d0;
+  font-weight: 700;
+}
 
 
 </style>
@@ -288,8 +300,10 @@
       <h1 id="join-board-title" class="text-4xl font-bold text-[#f5c518] mb-2">Quizshow</h1>
       <p class="text-yellow-200 mb-3">Raumcode: <b id="join-room-code">—</b></p>
       <div id="join-team-section" class="mb-4">
-        <p class="text-white font-semibold mb-2">Wähle dein Team:</p>
+        <p id="join-team-title" class="text-white font-semibold mb-2">Wähle dein Team:</p>
+        <div id="join-team-confirmed" class="team-choice-confirmed hidden mb-3"></div>
         <div id="join-team-buttons" class="flex flex-wrap gap-2 justify-center"></div>
+        <p id="join-team-hint" class="text-xs text-yellow-200/90 mt-2">Nach dem Auswählen kann das Team auf diesem Gerät nicht mehr geändert werden.</p>
       </div>
       <p id="join-status" class="text-green-300 font-bold mb-4">Verbinde...</p>
       <div id="join-current-question" class="bg-[#0f1347] rounded-xl p-4 border border-[#f5c518]/30 mb-4 hidden">
@@ -1615,25 +1629,69 @@ function renderJoinedBoardView() {
   renderJoinCurrentQuestion(data);
 }
 
+function joinTeamStorageKey() {
+  return joinedRoomId ? `${JOIN_TEAM_KEY}_${joinedRoomId}` : JOIN_TEAM_KEY;
+}
+
+function getSelectedJoinTeamId() {
+  return localStorage.getItem(joinTeamStorageKey()) || '';
+}
+
 function renderJoinTeamButtons(data) {
   const wrap = document.getElementById('join-team-buttons');
+  const confirmed = document.getElementById('join-team-confirmed');
+  const title = document.getElementById('join-team-title');
+  const hint = document.getElementById('join-team-hint');
   if (!wrap) return;
-  const selected = localStorage.getItem(JOIN_TEAM_KEY) || '';
+
+  const selected = getSelectedJoinTeamId();
   const teams = data.teams || [];
-  wrap.innerHTML = teams.map(t => `<button type="button" onclick="chooseJoinTeam(${Number(t.id)})" class="team-choice-btn ${String(t.id) === selected ? 'selected' : ''} bg-[#0f1347] hover:bg-[#1a237e] text-white font-bold py-2 px-4 rounded-lg border border-[#f5c518]/40">${escHtml(t.name)}</button>`).join('') || '<p class="text-white/60">Der Host hat noch keine Teams gestartet.</p>';
+  const selectedTeam = teams.find(t => String(t.id) === String(selected));
+
+  if (!teams.length) {
+    wrap.innerHTML = '<p class="text-white/60">Der Host hat noch keine Teams gestartet.</p>';
+    confirmed?.classList.add('hidden');
+    if (title) title.textContent = 'Wähle dein Team:';
+    if (hint) hint.textContent = 'Warte, bis der Host Teams erstellt hat.';
+    return;
+  }
+
+  if (selectedTeam) {
+    wrap.innerHTML = teams.map(t => `<button type="button" disabled class="team-choice-btn locked ${String(t.id) === String(selected) ? 'selected' : ''} bg-[#0f1347] text-white font-bold py-2 px-4 rounded-lg border border-[#f5c518]/40">${escHtml(t.name)}</button>`).join('');
+    if (confirmed) {
+      confirmed.innerHTML = `✅ Du bist im Team: <b>${escHtml(selectedTeam.name)}</b>`;
+      confirmed.classList.remove('hidden');
+    }
+    if (title) title.textContent = 'Team gewählt';
+    if (hint) hint.textContent = 'Dieses Team ist für diesen Raum auf diesem Gerät festgelegt.';
+    return;
+  }
+
+  confirmed?.classList.add('hidden');
+  if (title) title.textContent = 'Wähle dein Team:';
+  if (hint) hint.textContent = 'Nach dem Auswählen kann das Team auf diesem Gerät nicht mehr geändert werden.';
+  wrap.innerHTML = teams.map(t => `<button type="button" onclick="chooseJoinTeam(${Number(t.id)})" class="team-choice-btn bg-[#0f1347] hover:bg-[#1a237e] text-white font-bold py-2 px-4 rounded-lg border border-[#f5c518]/40">${escHtml(t.name)}</button>`).join('');
 }
 
 function chooseJoinTeam(teamId) {
   const data = joinedRoomData;
   const team = (data?.teams || []).find(t => Number(t.id) === Number(teamId));
   if (!team || !joinedRoomId) return;
-  localStorage.setItem(JOIN_TEAM_KEY, String(team.id));
+
+  if (getSelectedJoinTeamId()) {
+    alert('Du hast dein Team bereits gewählt. Das Team kann danach nicht mehr geändert werden.');
+    renderJoinTeamButtons(data);
+    return;
+  }
+
+  localStorage.setItem(joinTeamStorageKey(), String(team.id));
   const fb = getFirebaseTools();
   if (!fb) return;
   fb.update(fb.ref(fb.db, `rooms/${joinedRoomId}/participants/${getJoinClientId()}`), {
     teamId: team.id,
     teamName: team.name,
-    joinedAt: Date.now()
+    joinedAt: Date.now(),
+    locked: true
   }).catch(err => alert('Team konnte nicht gewählt werden: ' + err.message));
   renderJoinTeamButtons(data);
 }
