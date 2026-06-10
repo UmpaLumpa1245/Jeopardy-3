@@ -252,7 +252,7 @@
 const CATS = 5, QS = 5, POINTS = [100, 200, 300, 400, 500];
 const PUBLIC_QUIZ_FILE = 'quiz.json';
 const GITHUB_OWNER = 'UmpaLumpa1245';
-const GITHUB_REPO = 'Jeopardy-2';
+const GITHUB_REPO = 'Jeopardy-3';
 const GITHUB_BRANCH = 'main';
 const GITHUB_QUIZ_PATH = 'quiz.json';
 const GITHUB_TOKEN_KEY = 'jeopardy_github_token_v1';
@@ -697,6 +697,13 @@ function utf8ToBase64(str) {
   return btoa(binary);
 }
 
+function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 async function publishQuizToGitHub() {
   const token = localStorage.getItem(GITHUB_TOKEN_KEY);
   if (!token) {
@@ -715,7 +722,7 @@ async function publishQuizToGitHub() {
     const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(GITHUB_QUIZ_PATH)}`;
 
     let sha = null;
-    const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(GITHUB_BRANCH)}`, {
+    const getRes = await fetchWithTimeout(`${apiUrl}?ref=${encodeURIComponent(GITHUB_BRANCH)}`, {
       headers: {
         'Accept': 'application/vnd.github+json',
         'Authorization': `Bearer ${localStorage.getItem(GITHUB_TOKEN_KEY)}`,
@@ -730,7 +737,7 @@ async function publishQuizToGitHub() {
       throw new Error(err.message || `GitHub konnte quiz.json nicht lesen (${getRes.status}).`);
     }
 
-    const putRes = await fetch(apiUrl, {
+    const putRes = await fetchWithTimeout(apiUrl, {
       method: 'PUT',
       headers: {
         'Accept': 'application/vnd.github+json',
@@ -754,7 +761,10 @@ async function publishQuizToGitHub() {
     setSaveMessage('Veröffentlicht! GitHub Pages braucht eventuell 1–2 Minuten, bis alle Besucher die Änderung sehen.', true);
   } catch (e) {
     console.error(e);
-    setSaveMessage('Fehler beim Veröffentlichen: ' + (e.message || e), false);
+    const msgText = e.name === 'AbortError'
+      ? 'Zeitüberschreitung: GitHub hat nicht rechtzeitig geantwortet. Prüfe Token, Internet und Repository.'
+      : 'Fehler beim Veröffentlichen: ' + (e.message || e);
+    setSaveMessage(msgText, false);
     if (String(e.message || '').toLowerCase().includes('bad credentials') || String(e.message || '').toLowerCase().includes('401')) {
       localStorage.removeItem(GITHUB_TOKEN_KEY);
       alert('Der GitHub Token ist ungültig oder abgelaufen. Bitte erstelle einen neuen Token und trage ihn erneut ein.');
