@@ -109,36 +109,41 @@
 }
 
 
-/* Firebase Echtzeit-Buzzer */
-.buzzer-panel {
+/* Firebase Echtzeit-Board-Hosting */
+.host-panel {
   background: rgba(0,0,0,.28);
   border: 1px solid rgba(245,197,24,.45);
   border-radius: 1rem;
-  padding: 1rem;
-  margin: 1rem 0;
+  padding: .85rem;
+  margin-bottom: 1rem;
 }
-.buzzer-room-link {
+.host-room-link {
   word-break: break-all;
   color: #fde68a;
   font-weight: 700;
 }
-.buzzer-first {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #f5c518;
-  margin-top: .75rem;
-}
-#view-buzzer-player {
+#view-join-player {
   min-height: 100%;
 }
-.player-buzzer-button {
-  width: min(72vw, 320px);
-  height: min(72vw, 320px);
-  border-radius: 9999px;
-  font-size: clamp(2rem, 8vw, 4rem);
-  font-weight: 900;
-  box-shadow: 0 0 35px rgba(245,197,24,.5);
+.player-board-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .45rem;
 }
+.player-board-grid > div {
+  min-height: 3.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: .75rem;
+  padding: .35rem;
+}
+.team-choice-btn.selected {
+  outline: 3px solid #f5c518;
+  transform: scale(1.02);
+}
+
 
 </style>
 </head>
@@ -220,7 +225,17 @@
     <div class="flex items-center justify-between mb-4 gap-3">
       <button onclick="showView('menu')" class="text-[#f5c518] hover:text-white flex items-center gap-2"><i data-lucide="arrow-left"></i> Zurück</button>
       <h2 id="play-title" class="text-2xl font-bold text-[#f5c518] text-center">Quizshow</h2>
-      <span class="w-20"></span>
+      <button type="button" onclick="createHostedBoardRoom()" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-2 px-4 rounded-lg">🌐 Hosten</button>
+    </div>
+    <div id="host-board-panel" class="host-panel hidden">
+      <div class="flex flex-wrap gap-2 justify-center mb-2">
+        <button type="button" onclick="createHostedBoardRoom()" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-2 px-4 rounded-lg">🌐 Board hosten</button>
+        <button type="button" onclick="syncHostedBoard()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">🔄 Jetzt synchronisieren</button>
+        <button type="button" onclick="closeHostedBoardRoom()" class="bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">✖ Raum schließen</button>
+      </div>
+      <p class="text-sm text-white/80 text-center">Beitrittscode / Link:</p>
+      <p id="host-board-room-link" class="host-room-link text-center">Noch kein Raum erstellt.</p>
+      <div id="host-board-participants" class="mt-3 text-sm text-left max-h-24 overflow-auto"></div>
     </div>
     <div id="play-grid" class="flex-1 grid grid-cols-5 gap-2 mb-6"></div>
     <div id="player-scores" class="grid gap-2"></div>
@@ -231,16 +246,9 @@
       <p class="text-[#f5c518] font-bold text-sm mb-2" id="modal-cat"></p>
       <p class="text-2xl font-bold mb-5" id="modal-question"></p>
 
-      <div id="buzzer-host-panel" class="buzzer-panel">
-        <div class="flex flex-wrap gap-2 justify-center mb-3">
-          <button type="button" onclick="createBuzzerRoom()" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-2 px-4 rounded-lg">🔔 Buzzer-Raum</button>
-          <button type="button" onclick="resetBuzzer()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">🔄 Reset</button>
-          <button type="button" onclick="toggleBuzzerLock()" id="buzzer-lock-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">🔓 Offen</button>
-        </div>
-        <p class="text-sm text-white/80">Spieler-Link:</p>
-        <p id="buzzer-room-link" class="buzzer-room-link">Noch kein Raum erstellt.</p>
-        <p id="buzzer-winner" class="buzzer-first">Noch kein Buzz.</p>
-        <div id="buzzer-list" class="mt-2 text-left text-sm max-h-28 overflow-auto"></div>
+      <div id="host-question-panel" class="host-panel hidden">
+        <p class="text-sm text-yellow-200 font-bold mb-1">🌐 Dieses Board wird live gehostet.</p>
+        <p class="text-xs text-white/70">Frage und Antwort werden automatisch auf den Geräten der beigetretenen Teams angezeigt.</p>
       </div>
       <div id="quick-wrong-area" class="mb-5">
         <p class="text-white text-sm mb-2">Falsche Antwort direkt abziehen:</p>
@@ -275,13 +283,25 @@
   </div>
 
 
-  <div id="view-buzzer-player" class="hidden flex flex-col items-center justify-center p-8 text-center">
-    <div class="bg-[#1a237e] rounded-2xl p-8 border-2 border-[#f5c518] max-w-md w-full">
-      <h1 class="text-4xl font-bold text-[#f5c518] mb-2">Buzzer</h1>
-      <p class="text-yellow-200 mb-2">Raumcode: <b id="player-room-code">—</b></p>
-      <input id="player-buzzer-name" class="w-full bg-[#0a0e2a] text-white border border-[#f5c518]/50 rounded-lg px-4 py-3 text-center text-xl font-bold mb-5" placeholder="Teamname">
-      <button id="player-buzzer-button" type="button" onclick="playerBuzzNow()" class="player-buzzer-button bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a]">BUZZ</button>
-      <p id="player-buzzer-status" class="mt-5 text-xl font-bold text-white">Bereit.</p>
+  <div id="view-join-player" class="hidden flex flex-col items-center justify-start p-4 text-center min-h-full">
+    <div class="bg-[#1a237e] rounded-2xl p-5 border-2 border-[#f5c518] max-w-4xl w-full">
+      <h1 id="join-board-title" class="text-4xl font-bold text-[#f5c518] mb-2">Quizshow</h1>
+      <p class="text-yellow-200 mb-3">Raumcode: <b id="join-room-code">—</b></p>
+      <div id="join-team-section" class="mb-4">
+        <p class="text-white font-semibold mb-2">Wähle dein Team:</p>
+        <div id="join-team-buttons" class="flex flex-wrap gap-2 justify-center"></div>
+      </div>
+      <p id="join-status" class="text-green-300 font-bold mb-4">Verbinde...</p>
+      <div id="join-current-question" class="bg-[#0f1347] rounded-xl p-4 border border-[#f5c518]/30 mb-4 hidden">
+        <p id="join-current-cat" class="text-[#f5c518] font-bold text-sm mb-1"></p>
+        <p id="join-current-text" class="text-2xl font-bold mb-3"></p>
+        <div id="join-current-answer" class="hidden border-t border-[#f5c518]/30 pt-3 mt-3">
+          <p class="text-[#f5c518] text-sm">Antwort:</p>
+          <p id="join-current-answer-text" class="text-xl font-semibold"></p>
+        </div>
+      </div>
+      <div id="join-scores" class="grid gap-2 mb-4"></div>
+      <div id="join-board-grid" class="player-board-grid"></div>
     </div>
   </div>
 
@@ -412,6 +432,7 @@ function renderBoardMenu() {
     list.appendChild(card);
   }
   applyGlassEffect();
+  if (hostedRoomId) listenHostedBoardRoom();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -1199,6 +1220,7 @@ function startGameSetup() {
   players = names.map((name, i) => ({ id: i + 1, name, score: 0 }));
   revealedCells.clear();
   showView('play');
+  if (hostedRoomId) syncHostedBoard();
 }
 
 
@@ -1243,6 +1265,8 @@ function renderPlayView() {
     scoreContainer.appendChild(card);
   });
   fitCategoryHeaders();
+  renderHostBoardPanel();
+  if (hostedRoomId) syncHostedBoard();
 }
 
 async function openQuestion(c, q) {
@@ -1285,6 +1309,7 @@ async function openQuestion(c, q) {
   answerImage.removeAttribute('src'); answerImageError.classList.add('hidden'); answerImageContainer.classList.add('hidden');
 
   document.getElementById('modal').classList.remove('hidden');
+  if (hostedRoomId) syncHostedBoard();
   if (buzzerRoomId) listenToBuzzerRoom();
   renderBuzzerHostLink();
 
@@ -1310,6 +1335,7 @@ function subtractWrongPoints(playerId) {
  if (!p || !currentCell) return;
  p.score -= Math.floor(currentCell.points * 0.5);
  renderScoreCardsOnly();
+ if (hostedRoomId) syncHostedBoard();
 }
 
 function manualChangeScore(playerId) {
@@ -1348,6 +1374,7 @@ function saveManualScore() {
   p.score = Math.round(newScore);
   closeScoreEditor();
   renderScoreCardsOnly();
+ if (hostedRoomId) syncHostedBoard();
 }
 
 function showAnswer() { 
@@ -1357,6 +1384,7 @@ function showAnswer() {
  document.getElementById('btn-assign-player').classList.remove('hidden');
  document.getElementById('btn-wrong-player').classList.remove('hidden');
  document.getElementById('btn-finish-question').classList.remove('hidden');
+ if (hostedRoomId) syncHostedBoard();
 }
 function awardPoints(correct = true) { 
  const id = +document.getElementById('player-select').value; 
@@ -1374,10 +1402,11 @@ function awardPoints(correct = true) {
  document.getElementById('player-select').value = '';
  renderScoreCardsOnly();
 }
-function skipQuestion() { if (currentCell) revealedCells.add(`${currentCell.c}-${currentCell.q}`); closeModalAndRender(); }
+function skipQuestion() { if (currentCell) revealedCells.add(`${currentCell.c}-${currentCell.q}`); if (hostedRoomId) syncHostedBoard(); closeModalAndRender(); }
 
 function finishQuestion() {
   if (currentCell) revealedCells.add(`${currentCell.c}-${currentCell.q}`);
+  if (hostedRoomId) syncHostedBoard();
   closeModalAndRender();
 }
 
@@ -1394,7 +1423,7 @@ function renderScoreCardsOnly() {
   });
 }
 
-function closeModalAndRender() { document.getElementById('modal').classList.add('hidden'); renderPlayView(); }
+function closeModalAndRender() { document.getElementById('modal').classList.add('hidden'); currentCell = null; renderPlayView(); if (hostedRoomId) syncHostedBoard(); }
 
 
 window.openScoreEditor = openScoreEditor;
@@ -1410,17 +1439,20 @@ document.getElementById('score-edit-input')?.addEventListener('keydown', (e) => 
 
 
 
-// ---------- Firebase Echtzeit-Buzzer ----------
-const BUZZER_ROOM_KEY = 'jeopardy_buzzer_room_v1';
-let buzzerRoomId = localStorage.getItem(BUZZER_ROOM_KEY) || '';
-let buzzerLocked = false;
-let buzzerUnsubscribe = null;
+// ---------- Firebase Echtzeit-Board-Hosting ----------
+const HOST_ROOM_KEY = 'jeopardy_hosted_board_room_v1';
+const JOIN_CLIENT_KEY = 'jeopardy_join_client_id_v1';
+const JOIN_TEAM_KEY = 'jeopardy_join_team_id_v1';
+let hostedRoomId = localStorage.getItem(HOST_ROOM_KEY) || '';
+let hostedUnsubscribe = null;
+let joinedRoomId = '';
+let joinedRoomData = null;
 
 function randomRoomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-function getBuzzerTools() {
+function getFirebaseTools() {
   if (!window.firebaseBuzzer) {
     alert('Firebase ist noch nicht geladen. Bitte Internetverbindung prüfen und die Seite neu laden.');
     return null;
@@ -1428,140 +1460,222 @@ function getBuzzerTools() {
   return window.firebaseBuzzer;
 }
 
-function buzzerRoomRef(path = '') {
-  const fb = getBuzzerTools();
-  if (!fb || !buzzerRoomId) return null;
-  return fb.ref(fb.db, `rooms/${buzzerRoomId}${path ? '/' + path : ''}`);
-}
-
-function createBuzzerRoom() {
-  if (!buzzerRoomId) {
-    buzzerRoomId = randomRoomCode();
-    localStorage.setItem(BUZZER_ROOM_KEY, buzzerRoomId);
+function getJoinClientId() {
+  let id = localStorage.getItem(JOIN_CLIENT_KEY);
+  if (!id) {
+    id = 'c_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(JOIN_CLIENT_KEY, id);
   }
-  const fb = getBuzzerTools();
-  if (!fb) return;
-  fb.set(fb.ref(fb.db, `rooms/${buzzerRoomId}`), {
-    createdAt: Date.now(),
-    locked: false,
-    buzzes: {}
-  }).then(() => {
-    buzzerLocked = false;
-    listenToBuzzerRoom();
-    renderBuzzerHostLink();
-  }).catch(err => alert('Buzzer-Raum konnte nicht erstellt werden: ' + err.message));
+  return id;
 }
 
-function renderBuzzerHostLink() {
-  const linkEl = document.getElementById('buzzer-room-link');
-  if (!linkEl) return;
-  if (!buzzerRoomId) {
-    linkEl.textContent = 'Noch kein Raum erstellt.';
+function collectHostedState() {
+  const board = cleanBoardForPublic(localBoard && localBoard.length ? localBoard : getBoard());
+  return {
+    type: 'jeopardy-board',
+    boardId: String(currentBoardId || '1'),
+    title: localStorage.getItem(titleKey()) || 'Quizshow',
+    board,
+    teams: (players || []).map(p => ({ id: p.id, name: p.name, score: p.score })),
+    revealed: Array.from(revealedCells || []),
+    currentQuestion: currentCell ? {
+      c: currentCell.c,
+      q: currentCell.q,
+      points: currentCell.points,
+      answerShown: !document.getElementById('modal-answer')?.classList.contains('hidden')
+    } : null,
+    updatedAt: Date.now()
+  };
+}
+
+function createHostedBoardRoom() {
+  if (!players || !players.length) {
+    alert('Starte zuerst ein Spiel mit Teams. Danach kannst du das Board hosten.');
+    showView('setup');
     return;
   }
-  const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(buzzerRoomId)}`;
-  linkEl.innerHTML = `Raum <b>${escHtml(buzzerRoomId)}</b><br>${escHtml(url)}`;
-}
-
-function listenToBuzzerRoom() {
-  if (!buzzerRoomId) return;
-  const fb = getBuzzerTools();
+  if (!hostedRoomId) {
+    hostedRoomId = randomRoomCode();
+    localStorage.setItem(HOST_ROOM_KEY, hostedRoomId);
+  }
+  const fb = getFirebaseTools();
   if (!fb) return;
-  if (buzzerUnsubscribe) buzzerUnsubscribe();
-  buzzerUnsubscribe = fb.onValue(fb.ref(fb.db, `rooms/${buzzerRoomId}`), snap => {
-    const data = snap.val() || {};
-    buzzerLocked = !!data.locked;
-    updateBuzzerHostView(data);
-  });
-  renderBuzzerHostLink();
+  const data = collectHostedState();
+  fb.set(fb.ref(fb.db, `rooms/${hostedRoomId}`), {
+    ...data,
+    createdAt: Date.now(),
+    participants: {}
+  }).then(() => {
+    listenHostedBoardRoom();
+    renderHostBoardPanel();
+    alert('Board wird gehostet. Teile den Code: ' + hostedRoomId);
+  }).catch(err => alert('Board konnte nicht gehostet werden: ' + err.message));
 }
 
-function updateBuzzerHostView(data) {
-  const winnerEl = document.getElementById('buzzer-winner');
-  const listEl = document.getElementById('buzzer-list');
-  const lockBtn = document.getElementById('buzzer-lock-btn');
-  const buzzes = Object.values(data.buzzes || {}).sort((a, b) => (a.time || 0) - (b.time || 0));
-  if (lockBtn) lockBtn.textContent = data.locked ? '🔒 Gesperrt' : '🔓 Offen';
-  if (winnerEl) winnerEl.textContent = buzzes.length ? `🥇 ${buzzes[0].name} war zuerst!` : 'Noch kein Buzz.';
-  if (listEl) {
-    listEl.innerHTML = buzzes.map((b, i) => `<div>${i + 1}. <b>${escHtml(b.name)}</b> <span class="text-white/50">${new Date(b.time || Date.now()).toLocaleTimeString('de-DE')}</span></div>`).join('');
+function syncHostedBoard() {
+  if (!hostedRoomId) return;
+  const fb = getFirebaseTools();
+  if (!fb) return;
+  fb.update(fb.ref(fb.db, `rooms/${hostedRoomId}`), collectHostedState()).catch(err => console.warn('Sync fehlgeschlagen:', err));
+  renderHostBoardPanel();
+}
+
+function closeHostedBoardRoom() {
+  if (!hostedRoomId) return;
+  const fb = getFirebaseTools();
+  const oldRoom = hostedRoomId;
+  hostedRoomId = '';
+  localStorage.removeItem(HOST_ROOM_KEY);
+  if (hostedUnsubscribe) { hostedUnsubscribe(); hostedUnsubscribe = null; }
+  if (fb) fb.update(fb.ref(fb.db, `rooms/${oldRoom}`), { closed: true, updatedAt: Date.now() }).catch(() => {});
+  renderHostBoardPanel();
+}
+
+function renderHostBoardPanel(data = null) {
+  const panel = document.getElementById('host-board-panel');
+  const linkEl = document.getElementById('host-board-room-link');
+  const participantsEl = document.getElementById('host-board-participants');
+  const questionPanel = document.getElementById('host-question-panel');
+  if (panel) panel.classList.toggle('hidden', !hostedRoomId);
+  if (questionPanel) questionPanel.classList.toggle('hidden', !hostedRoomId);
+  if (!linkEl) return;
+  if (!hostedRoomId) {
+    linkEl.textContent = 'Noch kein Raum erstellt.';
+    if (participantsEl) participantsEl.innerHTML = '';
+    return;
+  }
+  const url = `${location.origin}${location.pathname}?join=${encodeURIComponent(hostedRoomId)}`;
+  linkEl.innerHTML = `Code <b>${escHtml(hostedRoomId)}</b><br>${escHtml(url)}`;
+  if (participantsEl && data) {
+    const participants = Object.values(data.participants || {});
+    participantsEl.innerHTML = participants.length
+      ? participants.map(p => `<div>✅ <b>${escHtml(p.teamName || 'Team')}</b> ist beigetreten</div>`).join('')
+      : '<div class="text-white/60 text-center">Noch keine Teams beigetreten.</div>';
   }
 }
 
-function resetBuzzer() {
-  if (!buzzerRoomId) createBuzzerRoom();
-  const fb = getBuzzerTools();
-  if (!fb || !buzzerRoomId) return;
-  fb.update(fb.ref(fb.db, `rooms/${buzzerRoomId}`), { buzzes: {}, locked: false });
+function listenHostedBoardRoom() {
+  if (!hostedRoomId) return;
+  const fb = getFirebaseTools();
+  if (!fb) return;
+  if (hostedUnsubscribe) hostedUnsubscribe();
+  hostedUnsubscribe = fb.onValue(fb.ref(fb.db, `rooms/${hostedRoomId}`), snap => {
+    renderHostBoardPanel(snap.val() || {});
+  });
+  renderHostBoardPanel();
 }
 
-function toggleBuzzerLock() {
-  if (!buzzerRoomId) createBuzzerRoom();
-  const fb = getBuzzerTools();
-  if (!fb || !buzzerRoomId) return;
-  fb.update(fb.ref(fb.db, `rooms/${buzzerRoomId}`), { locked: !buzzerLocked });
-}
-
-function initBuzzerPlayerMode() {
+function initJoinBoardMode() {
   const params = new URLSearchParams(location.search);
-  const room = (params.get('room') || '').trim().toUpperCase();
+  const room = (params.get('join') || params.get('room') || '').trim().toUpperCase();
   if (!room) return false;
-  buzzerRoomId = room;
-  localStorage.setItem(BUZZER_ROOM_KEY, buzzerRoomId);
+  joinedRoomId = room;
   ['menu','edit','play','setup'].forEach(id => document.getElementById('view-' + id)?.classList.add('hidden'));
-  document.getElementById('view-buzzer-player')?.classList.remove('hidden');
-  document.getElementById('player-room-code').textContent = buzzerRoomId;
-  const nameInput = document.getElementById('player-buzzer-name');
-  const savedName = localStorage.getItem('jeopardy_buzzer_player_name_v1') || params.get('player') || '';
-  if (nameInput) nameInput.value = savedName;
-  listenToPlayerRoom();
+  document.getElementById('view-join-player')?.classList.remove('hidden');
+  document.getElementById('join-room-code').textContent = joinedRoomId;
+  listenJoinedBoardRoom();
   return true;
 }
 
-function listenToPlayerRoom() {
-  const fb = getBuzzerTools();
-  if (!fb || !buzzerRoomId) return;
-  fb.onValue(fb.ref(fb.db, `rooms/${buzzerRoomId}`), snap => {
-    const data = snap.val() || {};
-    const btn = document.getElementById('player-buzzer-button');
-    const status = document.getElementById('player-buzzer-status');
-    const buzzes = Object.values(data.buzzes || {}).sort((a, b) => (a.time || 0) - (b.time || 0));
-    if (btn) btn.disabled = !!data.locked;
-    if (status) {
-      status.textContent = data.locked
-        ? (buzzes[0] ? `Gesperrt. Erste/r: ${buzzes[0].name}` : 'Buzzer ist gesperrt.')
-        : 'Bereit.';
-    }
+function listenJoinedBoardRoom() {
+  const fb = getFirebaseTools();
+  if (!fb || !joinedRoomId) return;
+  fb.onValue(fb.ref(fb.db, `rooms/${joinedRoomId}`), snap => {
+    joinedRoomData = snap.val() || null;
+    renderJoinedBoardView();
   });
 }
 
-function playerBuzzNow() {
-  const fb = getBuzzerTools();
-  if (!fb || !buzzerRoomId) return;
-  const input = document.getElementById('player-buzzer-name');
-  const name = (input?.value || '').trim();
-  if (!name) {
-    alert('Bitte zuerst Teamnamen eingeben.');
-    input?.focus();
+function renderJoinedBoardView() {
+  const data = joinedRoomData;
+  const status = document.getElementById('join-status');
+  if (!data || data.closed) {
+    if (status) status.textContent = data?.closed ? 'Der Raum wurde geschlossen.' : 'Raum wird gesucht...';
     return;
   }
-  localStorage.setItem('jeopardy_buzzer_player_name_v1', name);
-  const safeId = name.toLowerCase().replace(/[^a-z0-9_-]/gi, '_').slice(0, 40) || 'team';
-  const roomPath = `rooms/${buzzerRoomId}`;
-  fb.get(fb.ref(fb.db, roomPath)).then(snap => {
-    const data = snap.val() || {};
-    if (data.locked) return;
-    return fb.update(fb.ref(fb.db, roomPath), {
-      [`buzzes/${safeId}`]: { name, time: Date.now() },
-      locked: true
-    });
-  }).catch(err => alert('Buzz fehlgeschlagen: ' + err.message));
+  document.getElementById('join-board-title').textContent = data.title || 'Quizshow';
+  if (status) status.textContent = 'Verbunden.';
+  renderJoinTeamButtons(data);
+  renderJoinScores(data);
+  renderJoinBoardGrid(data);
+  renderJoinCurrentQuestion(data);
 }
 
-window.createBuzzerRoom = createBuzzerRoom;
-window.resetBuzzer = resetBuzzer;
-window.toggleBuzzerLock = toggleBuzzerLock;
-window.playerBuzzNow = playerBuzzNow;
+function renderJoinTeamButtons(data) {
+  const wrap = document.getElementById('join-team-buttons');
+  if (!wrap) return;
+  const selected = localStorage.getItem(JOIN_TEAM_KEY) || '';
+  const teams = data.teams || [];
+  wrap.innerHTML = teams.map(t => `<button type="button" onclick="chooseJoinTeam(${Number(t.id)})" class="team-choice-btn ${String(t.id) === selected ? 'selected' : ''} bg-[#0f1347] hover:bg-[#1a237e] text-white font-bold py-2 px-4 rounded-lg border border-[#f5c518]/40">${escHtml(t.name)}</button>`).join('') || '<p class="text-white/60">Der Host hat noch keine Teams gestartet.</p>';
+}
+
+function chooseJoinTeam(teamId) {
+  const data = joinedRoomData;
+  const team = (data?.teams || []).find(t => Number(t.id) === Number(teamId));
+  if (!team || !joinedRoomId) return;
+  localStorage.setItem(JOIN_TEAM_KEY, String(team.id));
+  const fb = getFirebaseTools();
+  if (!fb) return;
+  fb.update(fb.ref(fb.db, `rooms/${joinedRoomId}/participants/${getJoinClientId()}`), {
+    teamId: team.id,
+    teamName: team.name,
+    joinedAt: Date.now()
+  }).catch(err => alert('Team konnte nicht gewählt werden: ' + err.message));
+  renderJoinTeamButtons(data);
+}
+
+function renderJoinScores(data) {
+  const wrap = document.getElementById('join-scores');
+  if (!wrap) return;
+  const teams = data.teams || [];
+  wrap.style.gridTemplateColumns = `repeat(${Math.max(1, teams.length)}, 1fr)`;
+  wrap.innerHTML = teams.map(t => `<div class="bg-[#1a237e] border border-[#f5c518]/50 rounded-lg p-2 text-center"><p class="text-white text-sm font-semibold">${escHtml(t.name)}</p><p class="text-[#f5c518] text-xl font-bold">${Number(t.score || 0)}</p></div>`).join('');
+}
+
+function renderJoinBoardGrid(data) {
+  const grid = document.getElementById('join-board-grid');
+  if (!grid) return;
+  const board = data.board || [];
+  const revealed = new Set(data.revealed || []);
+  grid.innerHTML = '';
+  for (let c = 0; c < CATS; c++) {
+    const cat = board.find(b => b.category_index === c) || { category_name: `Kategorie ${c + 1}` };
+    const div = document.createElement('div');
+    div.className = 'bg-[#1a237e] text-[#f5c518] font-bold text-xs uppercase';
+    div.textContent = cat.category_name;
+    grid.appendChild(div);
+  }
+  for (let q = 0; q < QS; q++) for (let c = 0; c < CATS; c++) {
+    const key = `${c}-${q}`;
+    const div = document.createElement('div');
+    div.className = revealed.has(key) ? 'bg-[#0f1347]/50 text-white/25 font-bold' : 'bg-[#1a237e] text-[#f5c518] font-bold text-xl';
+    div.textContent = revealed.has(key) ? '—' : POINTS[q];
+    grid.appendChild(div);
+  }
+}
+
+function renderJoinCurrentQuestion(data) {
+  const box = document.getElementById('join-current-question');
+  const current = data.currentQuestion;
+  if (!box) return;
+  if (!current) {
+    box.classList.add('hidden');
+    return;
+  }
+  const item = (data.board || []).find(b => b.category_index === current.c && b.question_index === current.q);
+  if (!item) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  document.getElementById('join-current-cat').textContent = `${item.category_name} — ${item.points || current.points} Punkte`;
+  document.getElementById('join-current-text').textContent = item.question || '';
+  const answerBox = document.getElementById('join-current-answer');
+  document.getElementById('join-current-answer-text').textContent = item.answer || 'Keine Antwort eingetragen.';
+  answerBox?.classList.toggle('hidden', !current.answerShown);
+}
+
+window.createHostedBoardRoom = createHostedBoardRoom;
+window.syncHostedBoard = syncHostedBoard;
+window.closeHostedBoardRoom = closeHostedBoardRoom;
+window.chooseJoinTeam = chooseJoinTeam;
 
 
 
@@ -1590,7 +1704,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('resize', fitCategoryHeaders);
 async function initApp() {
-  if (initBuzzerPlayerMode()) {
+  if (initJoinBoardMode()) {
     applySavedTheme();
     applyGlassEffect();
     return;
