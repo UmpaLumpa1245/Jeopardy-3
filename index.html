@@ -324,10 +324,9 @@
 </div>
 
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-  import { getDatabase, ref, set, update, onValue, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyAAVKI3YFBpWNP2dzjIYfWAvmePeNpSaIg",
     authDomain: "jeopardy-b152a.firebaseapp.com",
@@ -339,10 +338,25 @@
     measurementId: "G-D28EGPRQCW"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  try {
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const ref = (database, path) => database.ref(path);
+    const set = (reference, value) => reference.set(value);
+    const update = (reference, value) => reference.update(value);
+    const onValue = (reference, callback) => {
+      reference.on('value', callback);
+      return () => reference.off('value', callback);
+    };
+    const get = (reference) => reference.get();
+    const serverTimestamp = () => firebase.database.ServerValue.TIMESTAMP;
 
-  window.firebaseBuzzer = { db, ref, set, update, onValue, get, serverTimestamp };
+    window.firebaseBuzzer = { db, ref, set, update, onValue, get, serverTimestamp };
+    window.firebaseLoadError = '';
+  } catch (e) {
+    console.error('Firebase konnte nicht initialisiert werden:', e);
+    window.firebaseLoadError = e && e.message ? e.message : String(e);
+  }
 </script>
 
 <script>
@@ -1454,7 +1468,7 @@ function randomRoomCode() {
 
 function getFirebaseTools() {
   if (!window.firebaseBuzzer) {
-    alert('Firebase ist noch nicht geladen. Bitte Internetverbindung prüfen und die Seite neu laden.');
+    alert('Firebase ist noch nicht geladen. Bitte Seite komplett neu laden. Falls es weiter passiert: Browser-Konsole prüfen. Fehler: ' + (window.firebaseLoadError || 'Firebase-Skripte wurden wahrscheinlich nicht geladen.'));
     return null;
   }
   return window.firebaseBuzzer;
