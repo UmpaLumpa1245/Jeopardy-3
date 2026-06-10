@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-06-10T20:29:47.689Z",
+  "exported_at": "2026-06-10T20:35:11.655Z",
   "theme": "custom-bg-image",
   "background_image": "images/Minecraft-Kinofilm-Fortsetzung-Sequel-Ankuendigung-Videospiel-Artikelbild-1200x675.webp",
   "board_count": 2,
@@ -16,8 +16,8 @@
           "category_name": "Kategorie 1",
           "question": "Welcher berühmte Film wird in dieser Scene aus Zoomania 1 parodiert?",
           "answer": "Der Pate",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Fru_Fru_ist_entsetzt.webp",
+          "answer_image_url": "images/csm_fw32big_08_5dbfd8be17.jpg",
           "audio_url": "",
           "points": 100,
           "revealed": false
@@ -28,8 +28,8 @@
           "category_name": "Kategorie 1",
           "question": "Wie heißt der Autor dieser Serien?",
           "answer": "Chuck Lorre",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/chuck-lorre-series.jpg",
+          "answer_image_url": "images/MV5BMjA5MTA1ODYxNV5BMl5BanBnXkFtZTcwNzU4NTQ4NA@@._V1_.jpg",
           "audio_url": "",
           "points": 200,
           "revealed": false
@@ -41,7 +41,7 @@
           "question": "Was ist die am öftesten bewertete Serie auf IMDb?",
           "answer": "Breaking Bad",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/000049.webp",
           "audio_url": "",
           "points": 300,
           "revealed": false
@@ -52,8 +52,8 @@
           "category_name": "Kategorie 1",
           "question": "Wie nennt man einen Quarterpounder mit Käse in Paris?",
           "answer": "Royal mit Käse",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Pulp-Fiction-Royale-with-Cheese.jpg",
+          "answer_image_url": "images/Screenshot 2026-06-10 222700.png",
           "audio_url": "",
           "points": 400,
           "revealed": false
@@ -65,7 +65,7 @@
           "question": "Was sind Dresel und aus welcher Filmreihe stammen sie?",
           "answer": "Kreuzung aus Drache und Esel / Shrek",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/unnamed.jpg",
           "audio_url": "",
           "points": 500,
           "revealed": false
