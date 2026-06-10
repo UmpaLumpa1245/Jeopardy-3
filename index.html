@@ -108,6 +108,38 @@
   justify-content: center !important;
 }
 
+
+/* Firebase Echtzeit-Buzzer */
+.buzzer-panel {
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(245,197,24,.45);
+  border-radius: 1rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.buzzer-room-link {
+  word-break: break-all;
+  color: #fde68a;
+  font-weight: 700;
+}
+.buzzer-first {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f5c518;
+  margin-top: .75rem;
+}
+#view-buzzer-player {
+  min-height: 100%;
+}
+.player-buzzer-button {
+  width: min(72vw, 320px);
+  height: min(72vw, 320px);
+  border-radius: 9999px;
+  font-size: clamp(2rem, 8vw, 4rem);
+  font-weight: 900;
+  box-shadow: 0 0 35px rgba(245,197,24,.5);
+}
+
 </style>
 </head>
 <body class="h-full">
@@ -198,6 +230,18 @@
     <div class="bg-[#1a237e] rounded-2xl p-8 max-w-2xl w-full text-center border-2 border-[#f5c518] max-h-[95vh] overflow-auto">
       <p class="text-[#f5c518] font-bold text-sm mb-2" id="modal-cat"></p>
       <p class="text-2xl font-bold mb-5" id="modal-question"></p>
+
+      <div id="buzzer-host-panel" class="buzzer-panel">
+        <div class="flex flex-wrap gap-2 justify-center mb-3">
+          <button type="button" onclick="createBuzzerRoom()" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-2 px-4 rounded-lg">🔔 Buzzer-Raum</button>
+          <button type="button" onclick="resetBuzzer()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">🔄 Reset</button>
+          <button type="button" onclick="toggleBuzzerLock()" id="buzzer-lock-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">🔓 Offen</button>
+        </div>
+        <p class="text-sm text-white/80">Spieler-Link:</p>
+        <p id="buzzer-room-link" class="buzzer-room-link">Noch kein Raum erstellt.</p>
+        <p id="buzzer-winner" class="buzzer-first">Noch kein Buzz.</p>
+        <div id="buzzer-list" class="mt-2 text-left text-sm max-h-28 overflow-auto"></div>
+      </div>
       <div id="quick-wrong-area" class="mb-5">
         <p class="text-white text-sm mb-2">Falsche Antwort direkt abziehen:</p>
         <div id="quick-wrong-buttons" class="flex flex-wrap gap-2 justify-center"></div>
@@ -230,6 +274,17 @@
     </div>
   </div>
 
+
+  <div id="view-buzzer-player" class="hidden flex flex-col items-center justify-center p-8 text-center">
+    <div class="bg-[#1a237e] rounded-2xl p-8 border-2 border-[#f5c518] max-w-md w-full">
+      <h1 class="text-4xl font-bold text-[#f5c518] mb-2">Buzzer</h1>
+      <p class="text-yellow-200 mb-2">Raumcode: <b id="player-room-code">—</b></p>
+      <input id="player-buzzer-name" class="w-full bg-[#0a0e2a] text-white border border-[#f5c518]/50 rounded-lg px-4 py-3 text-center text-xl font-bold mb-5" placeholder="Teamname">
+      <button id="player-buzzer-button" type="button" onclick="playerBuzzNow()" class="player-buzzer-button bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a]">BUZZ</button>
+      <p id="player-buzzer-status" class="mt-5 text-xl font-bold text-white">Bereit.</p>
+    </div>
+  </div>
+
   <div id="score-edit-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-[100001]">
     <div class="bg-[#1a237e] rounded-2xl p-6 max-w-sm w-full text-center border-2 border-[#f5c518]">
       <h2 class="text-2xl font-bold text-[#f5c518] mb-2">Punkte ändern</h2>
@@ -247,6 +302,28 @@
   </div>
 
 </div>
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+  import { getDatabase, ref, set, update, onValue, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAAVKI3YFBpWNP2dzjIYfWAvmePeNpSaIg",
+    authDomain: "jeopardy-b152a.firebaseapp.com",
+    databaseURL: "https://jeopardy-b152a-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "jeopardy-b152a",
+    storageBucket: "jeopardy-b152a.firebasestorage.app",
+    messagingSenderId: "635941983348",
+    appId: "1:635941983348:web:385cc8d11a792e2ac2ad21",
+    measurementId: "G-D28EGPRQCW"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.firebaseBuzzer = { db, ref, set, update, onValue, get, serverTimestamp };
+</script>
 
 <script>
 const CATS = 5, QS = 5, POINTS = [100, 200, 300, 400, 500];
@@ -1208,6 +1285,8 @@ async function openQuestion(c, q) {
   answerImage.removeAttribute('src'); answerImageError.classList.add('hidden'); answerImageContainer.classList.add('hidden');
 
   document.getElementById('modal').classList.remove('hidden');
+  if (buzzerRoomId) listenToBuzzerRoom();
+  renderBuzzerHostLink();
 
   const src = await getImageSrc(item);
   if (src && currentCell && currentCell.c === c && currentCell.q === q) {
@@ -1331,6 +1410,160 @@ document.getElementById('score-edit-input')?.addEventListener('keydown', (e) => 
 
 
 
+// ---------- Firebase Echtzeit-Buzzer ----------
+const BUZZER_ROOM_KEY = 'jeopardy_buzzer_room_v1';
+let buzzerRoomId = localStorage.getItem(BUZZER_ROOM_KEY) || '';
+let buzzerLocked = false;
+let buzzerUnsubscribe = null;
+
+function randomRoomCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function getBuzzerTools() {
+  if (!window.firebaseBuzzer) {
+    alert('Firebase ist noch nicht geladen. Bitte Internetverbindung prüfen und die Seite neu laden.');
+    return null;
+  }
+  return window.firebaseBuzzer;
+}
+
+function buzzerRoomRef(path = '') {
+  const fb = getBuzzerTools();
+  if (!fb || !buzzerRoomId) return null;
+  return fb.ref(fb.db, `rooms/${buzzerRoomId}${path ? '/' + path : ''}`);
+}
+
+function createBuzzerRoom() {
+  if (!buzzerRoomId) {
+    buzzerRoomId = randomRoomCode();
+    localStorage.setItem(BUZZER_ROOM_KEY, buzzerRoomId);
+  }
+  const fb = getBuzzerTools();
+  if (!fb) return;
+  fb.set(fb.ref(fb.db, `rooms/${buzzerRoomId}`), {
+    createdAt: Date.now(),
+    locked: false,
+    buzzes: {}
+  }).then(() => {
+    buzzerLocked = false;
+    listenToBuzzerRoom();
+    renderBuzzerHostLink();
+  }).catch(err => alert('Buzzer-Raum konnte nicht erstellt werden: ' + err.message));
+}
+
+function renderBuzzerHostLink() {
+  const linkEl = document.getElementById('buzzer-room-link');
+  if (!linkEl) return;
+  if (!buzzerRoomId) {
+    linkEl.textContent = 'Noch kein Raum erstellt.';
+    return;
+  }
+  const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(buzzerRoomId)}`;
+  linkEl.innerHTML = `Raum <b>${escHtml(buzzerRoomId)}</b><br>${escHtml(url)}`;
+}
+
+function listenToBuzzerRoom() {
+  if (!buzzerRoomId) return;
+  const fb = getBuzzerTools();
+  if (!fb) return;
+  if (buzzerUnsubscribe) buzzerUnsubscribe();
+  buzzerUnsubscribe = fb.onValue(fb.ref(fb.db, `rooms/${buzzerRoomId}`), snap => {
+    const data = snap.val() || {};
+    buzzerLocked = !!data.locked;
+    updateBuzzerHostView(data);
+  });
+  renderBuzzerHostLink();
+}
+
+function updateBuzzerHostView(data) {
+  const winnerEl = document.getElementById('buzzer-winner');
+  const listEl = document.getElementById('buzzer-list');
+  const lockBtn = document.getElementById('buzzer-lock-btn');
+  const buzzes = Object.values(data.buzzes || {}).sort((a, b) => (a.time || 0) - (b.time || 0));
+  if (lockBtn) lockBtn.textContent = data.locked ? '🔒 Gesperrt' : '🔓 Offen';
+  if (winnerEl) winnerEl.textContent = buzzes.length ? `🥇 ${buzzes[0].name} war zuerst!` : 'Noch kein Buzz.';
+  if (listEl) {
+    listEl.innerHTML = buzzes.map((b, i) => `<div>${i + 1}. <b>${escHtml(b.name)}</b> <span class="text-white/50">${new Date(b.time || Date.now()).toLocaleTimeString('de-DE')}</span></div>`).join('');
+  }
+}
+
+function resetBuzzer() {
+  if (!buzzerRoomId) createBuzzerRoom();
+  const fb = getBuzzerTools();
+  if (!fb || !buzzerRoomId) return;
+  fb.update(fb.ref(fb.db, `rooms/${buzzerRoomId}`), { buzzes: {}, locked: false });
+}
+
+function toggleBuzzerLock() {
+  if (!buzzerRoomId) createBuzzerRoom();
+  const fb = getBuzzerTools();
+  if (!fb || !buzzerRoomId) return;
+  fb.update(fb.ref(fb.db, `rooms/${buzzerRoomId}`), { locked: !buzzerLocked });
+}
+
+function initBuzzerPlayerMode() {
+  const params = new URLSearchParams(location.search);
+  const room = (params.get('room') || '').trim().toUpperCase();
+  if (!room) return false;
+  buzzerRoomId = room;
+  localStorage.setItem(BUZZER_ROOM_KEY, buzzerRoomId);
+  ['menu','edit','play','setup'].forEach(id => document.getElementById('view-' + id)?.classList.add('hidden'));
+  document.getElementById('view-buzzer-player')?.classList.remove('hidden');
+  document.getElementById('player-room-code').textContent = buzzerRoomId;
+  const nameInput = document.getElementById('player-buzzer-name');
+  const savedName = localStorage.getItem('jeopardy_buzzer_player_name_v1') || params.get('player') || '';
+  if (nameInput) nameInput.value = savedName;
+  listenToPlayerRoom();
+  return true;
+}
+
+function listenToPlayerRoom() {
+  const fb = getBuzzerTools();
+  if (!fb || !buzzerRoomId) return;
+  fb.onValue(fb.ref(fb.db, `rooms/${buzzerRoomId}`), snap => {
+    const data = snap.val() || {};
+    const btn = document.getElementById('player-buzzer-button');
+    const status = document.getElementById('player-buzzer-status');
+    const buzzes = Object.values(data.buzzes || {}).sort((a, b) => (a.time || 0) - (b.time || 0));
+    if (btn) btn.disabled = !!data.locked;
+    if (status) {
+      status.textContent = data.locked
+        ? (buzzes[0] ? `Gesperrt. Erste/r: ${buzzes[0].name}` : 'Buzzer ist gesperrt.')
+        : 'Bereit.';
+    }
+  });
+}
+
+function playerBuzzNow() {
+  const fb = getBuzzerTools();
+  if (!fb || !buzzerRoomId) return;
+  const input = document.getElementById('player-buzzer-name');
+  const name = (input?.value || '').trim();
+  if (!name) {
+    alert('Bitte zuerst Teamnamen eingeben.');
+    input?.focus();
+    return;
+  }
+  localStorage.setItem('jeopardy_buzzer_player_name_v1', name);
+  const safeId = name.toLowerCase().replace(/[^a-z0-9_-]/gi, '_').slice(0, 40) || 'team';
+  const roomPath = `rooms/${buzzerRoomId}`;
+  fb.get(fb.ref(fb.db, roomPath)).then(snap => {
+    const data = snap.val() || {};
+    if (data.locked) return;
+    return fb.update(fb.ref(fb.db, roomPath), {
+      [`buzzes/${safeId}`]: { name, time: Date.now() },
+      locked: true
+    });
+  }).catch(err => alert('Buzz fehlgeschlagen: ' + err.message));
+}
+
+window.createBuzzerRoom = createBuzzerRoom;
+window.resetBuzzer = resetBuzzer;
+window.toggleBuzzerLock = toggleBuzzerLock;
+window.playerBuzzNow = playerBuzzNow;
+
+
 
 // Sicherheitsnetz: Funktionen und Buttons explizit global verbinden.
 window.saveAll = saveAll;
@@ -1357,6 +1590,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('resize', fitCategoryHeaders);
 async function initApp() {
+  if (initBuzzerPlayerMode()) {
+    applySavedTheme();
+    applyGlassEffect();
+    return;
+  }
   await loadPublicQuizJson();
   loadBoard();
   localBoard = getBoard();
