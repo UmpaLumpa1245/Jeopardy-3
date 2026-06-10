@@ -1374,8 +1374,15 @@ async function openQuestion(c, q) {
 
   document.getElementById('modal').classList.remove('hidden');
   if (hostedRoomId) syncHostedBoard();
-  if (buzzerRoomId) listenToBuzzerRoom();
-  renderBuzzerHostLink();
+
+  // Sicherheitscheck: Alte Buzzer-Funktionen existieren in der Board-Hosting-Version nicht mehr.
+  // Ohne diesen Check bricht openQuestion() hier mit einem Fehler ab und die Bilder werden nicht geladen.
+  if (typeof buzzerRoomId !== 'undefined' && buzzerRoomId && typeof listenToBuzzerRoom === 'function') {
+    listenToBuzzerRoom();
+  }
+  if (typeof renderBuzzerHostLink === 'function') {
+    renderBuzzerHostLink();
+  }
 
   const src = await getImageSrc(item);
   if (src && currentCell && currentCell.c === c && currentCell.q === q) {
