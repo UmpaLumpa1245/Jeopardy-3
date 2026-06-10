@@ -68,8 +68,6 @@ function seekHostQuestionAudio(value) {
 setInterval(() => {
   if (!document.getElementById('modal')?.classList.contains('hidden')) setupHostAudioSlider();
 }, 500);
-
-
 </script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
@@ -574,40 +572,7 @@ height:100%;
 }
 
 
-.custom-url-theme-box{
-  margin-top:12px;
-  padding:12px;
-  border:1px solid rgba(245,197,24,.4);
-  border-radius:12px;
-}
-.custom-url-theme-box input{
-  width:100%;
-  padding:10px;
-  border-radius:8px;
-  color:black;
-}
-
-
-/* Theme-Panel: Bild-URL Option */
-.custom-url-theme-box{
-  margin-top:.5rem;
-  padding:.65rem;
-  border:1px solid rgba(245,197,24,.45);
-  border-radius:.75rem;
-  background:rgba(0,0,0,.18);
-}
-
-
-/* Hintergrundbild aus URL/Pfad zuverlässig anzeigen */
-#app.custom-bg-image{
-  background-image: var(--custom-bg-image), linear-gradient(135deg,#0a0e2a,#1a237e,#000000) !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-attachment: fixed !important;
-}
-
-
-/* Erzwingt Hintergrundbild auf dem echten App-Container */
+/* Hintergrund-Synchronisation Host → Spieler */
 html body #app.custom-bg-image{
   background-image: var(--custom-bg-image), linear-gradient(135deg,#0a0e2a,#1a237e,#000000) !important;
   background-size: cover !important;
@@ -685,12 +650,6 @@ html body #app.custom-bg-image{
           Eigenes Bild wählen
           <input type="file" accept="image/*" class="hidden" onchange="handleBackgroundUpload(this)">
         </label>
-        <div class="custom-url-theme-box">
-          <p class="text-sm mb-2 font-bold text-[#f5c518]">Bild-URL einfügen</p>
-          <input id="custom-bg-url" type="url" placeholder="images/hintergrund.jpg" class="w-full bg-white text-[#0a0e2a] rounded-lg px-3 py-2 text-sm mb-2">
-          <button type="button" onclick="applyBackgroundImageUrl()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded-lg">URL übernehmen</button>
-        </div>
-
         <button onclick="removeCustomBackground()" class="bg-red-700 hover:bg-red-600 rounded p-2">Hintergrundbild entfernen</button>
       </div>
     </div>
@@ -755,7 +714,6 @@ html body #app.custom-bg-image{
       </div>
       <div id="modal-audio-container" class="hidden mb-5 bg-[#0f1347]/60 rounded-xl p-3 border border-[#f5c518]/30">
         <p class="text-[#f5c518] text-sm font-bold mb-2">Audio zur Frage:</p>
-        <audio id="modal-audio" controls preload="metadata" class="w-full rounded-lg"></audio>
         <audio id="modal-audio" controls preload="metadata" class="w-full rounded-lg"></audio>
         <p id="modal-audio-status" class="text-yellow-200 text-sm mt-2">Audio bereit.</p>
         <p id="modal-audio-error" class="hidden text-red-300 text-sm mt-2">Audio konnte nicht geladen werden.</p>
@@ -1261,29 +1219,7 @@ function persistBoard(board) {
   localStorage.setItem(storageKey(), JSON.stringify(allData));
 }
 
-
-function syncThemeUrlInputToStorage(){
-  const input = document.getElementById('custom-bg-url');
-  if (!input) return;
-  const raw = input.value.trim();
-  if (!raw) return;
-
-  const url = typeof normalizeBackgroundImageUrl === 'function'
-    ? normalizeBackgroundImageUrl(raw)
-    : raw;
-
-  localStorage.setItem(BG_IMAGE_KEY, url);
-  localStorage.setItem(THEME_KEY, 'custom-bg-image');
-
-  if (typeof forceApplyBackgroundImage === 'function') {
-    forceApplyBackgroundImage(url);
-  } else {
-    setTheme('custom-bg-image', false);
-  }
-}
-
 function collectQuizPackage() {
-  syncThemeUrlInputToStorage();
   syncEditInputs();
   persistBoard(localBoard);
   const count = getBoardCount();
@@ -1316,7 +1252,6 @@ function applyQuizPackage(pkg) {
     if (pkg.background_image) localStorage.setItem(BG_IMAGE_KEY, pkg.background_image);
     else localStorage.removeItem(BG_IMAGE_KEY);
   }
-
   const boards = pkg.boards;
   setBoardCount(Math.max(1, Number(pkg.board_count) || boards.length || 1));
   boards.forEach((board, index) => {
@@ -1413,7 +1348,6 @@ async function publishQuizToGitHub() {
   setSaveMessage('Veröffentliche quiz.json auf GitHub...', true);
 
   try {
-    syncThemeUrlInputToStorage();
     const pkg = collectQuizPackage();
     const json = JSON.stringify(pkg, null, 2);
     const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(GITHUB_QUIZ_PATH)}`;
@@ -1554,11 +1488,47 @@ function answerImgKey(c, q) { return `board-${currentBoardId}-answer-cell-${c}-$
 function audioKey(c, q) { return `board-${currentBoardId}-audio-cell-${c}-${q}`; }
 
 
+
+function forceApplyBackgroundImage(url){
+  const app = document.getElementById('app');
+  if (!app || !url) return;
+  app.classList.remove('theme-space','theme-sunset','theme-forest','theme-retro');
+  app.classList.add('custom-bg-image');
+  app.style.setProperty('--custom-bg-image', `url("${url}")`);
+  app.style.setProperty('background-image', `url("${url}"), linear-gradient(135deg,#0a0e2a,#1a237e,#000000)`, 'important');
+  app.style.setProperty('background-size', 'cover', 'important');
+  app.style.setProperty('background-position', 'center', 'important');
+  app.style.setProperty('background-attachment', 'fixed', 'important');
+}
+
+function getThemePayloadForRoom(){
+  return {
+    theme: localStorage.getItem(THEME_KEY) || 'theme-space',
+    background_image: localStorage.getItem(BG_IMAGE_KEY) || ''
+  };
+}
+
+function applyThemePayloadFromRoom(data){
+  if (!data) return;
+
+  const theme = data.theme || 'theme-space';
+  const bg = data.background_image || '';
+
+  if (theme) localStorage.setItem(THEME_KEY, theme);
+  if (bg) localStorage.setItem(BG_IMAGE_KEY, bg);
+
+  if (theme === 'custom-bg-image' && bg) {
+    forceApplyBackgroundImage(bg);
+  } else {
+    setTheme(theme, false);
+  }
+}
+
 function applySavedTheme() {
   const theme = localStorage.getItem(THEME_KEY) || 'theme-space';
   if (theme === 'custom-bg-image') {
     const bg = localStorage.getItem(BG_IMAGE_KEY);
-    if (bg && typeof forceApplyBackgroundImage === 'function') {
+    if (bg) {
       forceApplyBackgroundImage(bg);
       return;
     }
@@ -1577,12 +1547,7 @@ function setTheme(themeName, closePanel = true) {
   if (themeName === 'custom-bg-image') {
     const bgImage = localStorage.getItem(BG_IMAGE_KEY);
     if (bgImage) {
-      if (typeof forceApplyBackgroundImage === 'function') {
-        forceApplyBackgroundImage(bgImage);
-      } else {
-        app.style.setProperty('--custom-bg-image', `url("${bgImage}")`);
-        app.classList.add('custom-bg-image');
-      }
+      forceApplyBackgroundImage(bgImage);
       localStorage.setItem(THEME_KEY, 'custom-bg-image');
     } else {
       app.classList.add('theme-space');
@@ -1597,10 +1562,7 @@ function setTheme(themeName, closePanel = true) {
 }
 
 function toggleThemePanel() {
-  const panel = document.getElementById('theme-panel');
-  panel?.classList.toggle('hidden');
-  const input = document.getElementById('custom-bg-url');
-  if (input) input.value = localStorage.getItem(BG_IMAGE_KEY) || '';
+  document.getElementById('theme-panel').classList.toggle('hidden');
 }
 
 async function handleBackgroundUpload(input) {
@@ -2352,44 +2314,7 @@ async function collectHostedState() {
   };
 }
 
-async 
-function getThemePayloadForRoom(){
-  if (typeof syncThemeUrlInputToStorage === 'function') syncThemeUrlInputToStorage();
-  return {
-    theme: localStorage.getItem(THEME_KEY) || 'theme-space',
-    background_image: localStorage.getItem(BG_IMAGE_KEY) || ''
-  };
-}
-
-function applyThemePayloadFromRoom(data){
-  if (!data) return;
-  const theme = data.theme || 'theme-space';
-  const bg = data.background_image || '';
-
-  if (theme) localStorage.setItem(THEME_KEY, theme);
-  if (bg) localStorage.setItem(BG_IMAGE_KEY, bg);
-
-  if (theme === 'custom-bg-image' && bg) {
-    if (typeof forceApplyBackgroundImage === 'function') {
-      forceApplyBackgroundImage(bg);
-    } else {
-      const app = document.getElementById('app');
-      if (app) {
-        app.classList.remove('theme-space','theme-sunset','theme-forest','theme-retro');
-        app.classList.add('custom-bg-image');
-        app.style.setProperty('--custom-bg-image', `url("${bg}")`);
-        app.style.setProperty('background-image', `url("${bg}"), linear-gradient(135deg,#0a0e2a,#1a237e,#000000)`, 'important');
-        app.style.setProperty('background-size', 'cover', 'important');
-        app.style.setProperty('background-position', 'center', 'important');
-      }
-    }
-  } else if (theme) {
-    setTheme(theme, false);
-  }
-}
-
-function createHostedBoardRoom() {
-  const themePayload = getThemePayloadForRoom();
+async function createHostedBoardRoom() {
   if (!players || !players.length) {
     alert('Starte zuerst ein Spiel mit Teams. Danach kannst du das Board hosten.');
     showView('setup');
@@ -2417,7 +2342,6 @@ function createHostedBoardRoom() {
 }
 
 async function syncHostedBoard() {
-  const themePayload = getThemePayloadForRoom();
   if (!hostedRoomId) return;
   const fb = getFirebaseTools();
   if (!fb) return;
@@ -2497,6 +2421,7 @@ function listenJoinedBoardRoom() {
   if (!fb || !joinedRoomId) return;
   fb.onValue(fb.ref(fb.db, `rooms/${joinedRoomId}`), snap => {
     joinedRoomData = snap.val() || null;
+    applyThemePayloadFromRoom(joinedRoomData);
     playPlayerBuzzSoundForFirstBuzz((joinedRoomData && joinedRoomData.buzzer) || null);
     renderJoinedBoardView();
   });
@@ -3367,64 +3292,6 @@ setInterval(renderHostAudioStatus, 250);
     setTimeout(ensureHostAudioBar, 500);
   }, true);
 })();
-
-</script>
-<script>
-
-function normalizeBackgroundImageUrl(url){
-  url = String(url || '').trim();
-  if (!url) return '';
-  url = url.replace(/\\/g, '/');
-
-  // Für lokale Dateien wie "images/mein bild.jpg" Leerzeichen korrekt kodieren.
-  if (!/^https?:\/\//i.test(url) && !/^data:/i.test(url) && !/^blob:/i.test(url)) {
-    url = url.split('/').map(part => {
-      try { return encodeURIComponent(decodeURIComponent(part)); }
-      catch(e) { return encodeURIComponent(part); }
-    }).join('/');
-  }
-
-  return url;
-}
-
-function forceApplyBackgroundImage(url){
-  const app = document.getElementById('app');
-  if (!app) return false;
-
-  app.classList.remove('theme-space','theme-sunset','theme-forest','theme-retro');
-  app.classList.add('custom-bg-image');
-
-  app.style.setProperty('--custom-bg-image', `url("${url}")`);
-  app.style.setProperty('background-image', `url("${url}"), linear-gradient(135deg,#0a0e2a,#1a237e,#000000)`, 'important');
-  app.style.setProperty('background-size', 'cover', 'important');
-  app.style.setProperty('background-position', 'center', 'important');
-  app.style.setProperty('background-attachment', 'fixed', 'important');
-
-  return true;
-}
-
-function applyBackgroundImageUrl(){
-  const input = document.getElementById('custom-bg-url');
-  const raw = input ? input.value.trim() : '';
-  if (!raw) {
-    alert('Bitte einen Pfad einfügen, z. B. images/hintergrund.jpg');
-    return;
-  }
-
-  const url = normalizeBackgroundImageUrl(raw);
-
-  const test = new Image();
-  test.onload = function(){
-    localStorage.setItem(BG_IMAGE_KEY, url);
-    localStorage.setItem(THEME_KEY, 'custom-bg-image');
-    forceApplyBackgroundImage(url);
-    document.getElementById('theme-panel')?.classList.add('hidden');
-  };
-  test.onerror = function(){
-    alert('Bild konnte nicht geladen werden: ' + url + '\n\nPrüfe, ob die Datei wirklich im Ordner images liegt und der Dateiname exakt stimmt.');
-  };
-  test.src = url;
-}
 
 </script>
 </body>
