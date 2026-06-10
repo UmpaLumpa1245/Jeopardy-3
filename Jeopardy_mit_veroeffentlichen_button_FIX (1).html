@@ -1,0 +1,1364 @@
+<!doctype html>
+<html lang="de" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jeopardy Quiz public</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Source Sans 3', sans-serif; box-sizing: border-box; }
+    h1, h2, .category-header { font-family: 'Oswald', sans-serif; }
+    .glow { box-shadow: 0 0 20px rgba(255, 200, 0, 0.3); }
+  
+    .theme-space { background: linear-gradient(135deg,#0a0e2a,#1a237e,#000000); }
+    .theme-sunset { background: linear-gradient(135deg,#5b247a,#1bcedf); }
+    .theme-forest { background: linear-gradient(135deg,#134e5e,#71b280); }
+    .theme-retro { background: linear-gradient(135deg,#42275a,#734b6d); }
+    .custom-bg-image {
+      background-image: var(--custom-bg-image), linear-gradient(135deg,#0a0e2a,#1a237e,#000000);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .custom-bg-image::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #app > * { position: relative; z-index: 1; }
+
+  
+    /* Transparente Panels damit Hintergrund sichtbar bleibt */
+    [class*="bg-[#1a237e]"] { 
+      background-color: rgba(255,255,255,0.20) !important; 
+      backdrop-filter: blur(2px);
+    }
+    [class*="bg-[#0f1347]"] { 
+      background-color: rgba(255,255,255,0.20) !important; 
+      backdrop-filter: blur(2px);
+    }
+
+
+.category-header{
+ padding-top:.08rem !important;
+ padding-bottom:.08rem !important;
+ font-size:1.45rem !important;
+ font-weight:700 !important;
+ line-height:1 !important;
+}
+
+
+.bg-override-white-hover:hover{
+ background-color:rgba(255,255,255,.30)!important;
+}
+
+
+#modal{
+ z-index:99999 !important;
+ position:fixed !important;
+}
+#modal > div{
+ position:relative;
+ z-index:100000 !important;
+}
+#play-grid{
+ position:relative;
+ z-index:1;
+}
+
+
+/* Kategorie-Text groß und mittig im ganzen Feld */
+.category-header{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:0 !important;
+  font-size:clamp(1rem, 1.8vw, 1.7rem) !important;
+  line-height:0.9 !important;
+  letter-spacing:0.03em !important;
+}
+
+
+/* Kategorie-Felder: ca. halb so hoch wie Punktefelder, Text mittig und automatisch passend */
+#play-grid{
+  grid-template-rows: 0.5fr repeat(5, 1fr) !important;
+}
+#play-grid .category-header{
+  height:100% !important;
+  min-height:0 !important;
+  padding:0 .35rem !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  white-space:normal !important;
+  overflow:hidden !important;
+  word-break:break-word !important;
+  line-height:.95 !important;
+}
+#play-grid button{
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+</style>
+</head>
+<body class="h-full">
+<div id="app" class="h-full w-full theme-space text-white overflow-auto">
+  <div id="view-menu" class="flex flex-col items-center justify-center min-h-full p-8">
+    <h1 id="main-title" class="text-5xl font-bold text-[#f5c518] mb-12 text-center tracking-wide">Quizshow</h1>
+    <div class="flex flex-col gap-4 w-full max-w-sm">
+      <div id="board-list" class="flex flex-col gap-4"></div>
+      <button onclick="addBoard()" class="mt-2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all">
+        ➕ Neues Board hinzufügen
+      </button>
+    </div>
+  </div>
+
+  <div id="view-setup" class="flex flex-col items-center justify-center min-h-full p-8 hidden">
+    <div class="bg-[#1a237e] rounded-2xl p-8 border-2 border-[#f5c518] max-w-md w-full">
+      <h2 class="text-2xl font-bold text-[#f5c518] mb-2 text-center">Spieleranzahl</h2>
+      <p id="setup-board-label" class="text-center text-yellow-200 mb-6 font-semibold">Board 1</p>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-[#0f1347] rounded-lg p-4">
+          <label class="text-white font-semibold">Anzahl Spieler:</label>
+          <div class="flex items-center gap-3">
+            <button onclick="changePlayerCount(-1)" class="bg-red-600 hover:bg-red-500 text-white w-8 h-8 rounded-lg font-bold">−</button>
+            <input type="number" id="player-count" value="2" min="1" max="10" class="bg-[#0a0e2a] text-[#f5c518] border border-[#f5c518]/50 rounded-lg px-3 py-2 w-16 text-center font-bold" onchange="validatePlayerCount()">
+            <button onclick="changePlayerCount(1)" class="bg-green-600 hover:bg-green-500 text-white w-8 h-8 rounded-lg font-bold">+</button>
+          </div>
+        </div>
+        <div class="bg-[#0f1347] rounded-lg p-4">
+          <label class="block text-white font-semibold mb-3">Teamnamen:</label>
+          <div id="team-name-inputs" class="space-y-2"></div>
+        </div>
+        <button onclick="startGameSetup()" class="w-full bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-3 px-6 rounded-lg text-lg flex items-center justify-center gap-2 transition-all"><i data-lucide="play"></i> Starten</button>
+        <button onclick="showView('menu')" class="w-full bg-[#0f1347] hover:bg-[#1a237e] text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all"><i data-lucide="arrow-left"></i> Zurück</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-edit" class="min-h-full p-6 hidden">
+    <div class="flex items-center justify-between mb-6 gap-3">
+      <button onclick="showView('menu')" class="text-[#f5c518] hover:text-white flex items-center gap-2"><i data-lucide="arrow-left"></i> Zurück</button>
+      <h2 class="text-2xl font-bold text-[#f5c518] text-center">Quiz bearbeiten <span id="edit-board-label" class="text-yellow-200 text-lg">Board 1</span></h2>
+      <div class="flex flex-wrap gap-2 justify-end">
+        <button type="button" onclick="saveAll()" id="save-btn" class="bg-[#f5c518] text-[#0a0e2a] font-bold py-2 px-4 rounded-lg flex items-center gap-2 hover:bg-[#ffda44] transition-all"><i data-lucide="save"></i> Lokal speichern</button>
+        <button type="button" onclick="publishQuizToGitHub()" id="publish-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all">🌍 Veröffentlichen</button>
+        <button type="button" onclick="openGitHubTokenSetup()" id="token-btn" class="bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all">🔑 GitHub Token</button>
+        <button type="button" onclick="exportQuizJson()" id="export-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all">⬇️ Backup exportieren</button>
+        <label class="bg-[#0f1347] hover:bg-[#1a237e] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 cursor-pointer transition-all">⬆️ Backup laden
+          <input type="file" accept="application/json,.json" class="hidden" onchange="importQuizJson(this)">
+        </label>
+      </div>
+    </div>
+    <p class="text-center text-sm text-yellow-200 mb-4">Öffentlich machen: bearbeiten → <b>🌍 Veröffentlichen</b>. Beim ersten Mal musst du deinen GitHub Token eintragen.</p>
+    <div id="edit-grid" class="grid grid-cols-1 md:grid-cols-5 gap-4"></div>
+    <p id="save-msg" class="text-center mt-4 text-green-400 hidden">Gespeichert!</p>
+
+    <button onclick="toggleThemePanel()" id="theme-btn" class="fixed bottom-4 left-4 bg-[#f5c518] text-[#0a0e2a] px-4 py-3 rounded-full shadow-lg font-bold z-40 hidden">
+      🎨 Design ändern
+    </button>
+
+    <div id="theme-panel" class="fixed bottom-20 left-4 bg-[#1a237e] border border-[#f5c518] rounded-xl p-3 hidden z-40">
+      <p class="text-sm mb-2 font-bold text-[#f5c518]">Quiz Design</p>
+      <div class="flex flex-col gap-2">
+        <button onclick="setTheme('theme-space')" class="bg-[#0f1347] rounded p-2">Space</button>
+        <button onclick="setTheme('theme-sunset')" class="bg-[#0f1347] rounded p-2">Sunset</button>
+        <button onclick="setTheme('theme-forest')" class="bg-[#0f1347] rounded p-2">Forest</button>
+        <button onclick="setTheme('theme-retro')" class="bg-[#0f1347] rounded p-2">Retro</button>
+        <label class="cursor-pointer bg-[#f5c518] text-[#0a0e2a] rounded p-2 text-center font-bold mt-2">
+          Eigenes Bild wählen
+          <input type="file" accept="image/*" class="hidden" onchange="handleBackgroundUpload(this)">
+        </label>
+        <button onclick="removeCustomBackground()" class="bg-red-700 hover:bg-red-600 rounded p-2">Hintergrundbild entfernen</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="view-play" class="flex flex-col h-full p-4 hidden">
+    <div class="flex items-center justify-between mb-4 gap-3">
+      <button onclick="showView('menu')" class="text-[#f5c518] hover:text-white flex items-center gap-2"><i data-lucide="arrow-left"></i> Zurück</button>
+      <h2 id="play-title" class="text-2xl font-bold text-[#f5c518] text-center">Quizshow</h2>
+      <span class="w-20"></span>
+    </div>
+    <div id="play-grid" class="flex-1 grid grid-cols-5 gap-2 mb-6"></div>
+    <div id="player-scores" class="grid gap-2"></div>
+  </div>
+
+  <div id="modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-[#1a237e] rounded-2xl p-8 max-w-2xl w-full text-center border-2 border-[#f5c518] max-h-[95vh] overflow-auto">
+      <p class="text-[#f5c518] font-bold text-sm mb-2" id="modal-cat"></p>
+      <p class="text-2xl font-bold mb-5" id="modal-question"></p>
+      <div id="quick-wrong-area" class="mb-5">
+        <p class="text-white text-sm mb-2">Falsche Antwort direkt abziehen:</p>
+        <div id="quick-wrong-buttons" class="flex flex-wrap gap-2 justify-center"></div>
+      </div>
+      <div id="modal-image-container" class="hidden mb-5">
+        <img id="modal-image" src="" alt="Frage Bild" class="mx-auto max-w-full max-h-[45vh] object-contain rounded-lg bg-[#0a0e2a] border border-[#f5c518]/30">
+        <p id="modal-image-error" class="hidden text-red-300 text-sm mt-2">Bild konnte nicht geladen werden.</p>
+      </div>
+      <div id="modal-answer" class="hidden">
+        <div class="border-t border-[#f5c518]/30 pt-4 mt-4">
+          <p class="text-[#f5c518] text-sm mb-1">Antwort:</p>
+          <p class="text-xl font-semibold" id="modal-answer-text"></p>
+          <div id="modal-answer-image-container" class="hidden mt-4">
+            <img id="modal-answer-image" src="" alt="Antwort Bild" class="mx-auto max-w-full max-h-[35vh] object-contain rounded-lg bg-[#0a0e2a] border border-[#f5c518]/30">
+            <p id="modal-answer-image-error" class="hidden text-red-300 text-sm mt-2">Antwortbild konnte nicht geladen werden.</p>
+          </div>
+        </div>
+        <div class="mt-4">
+          <p class="text-white text-sm mb-2">Nach dem Auflösen: Punkte vergeben an:</p>
+          <select id="player-select" class="w-full bg-[#0a0e2a] border border-[#f5c518] text-white rounded-lg p-2 mb-3"><option value="">-- Spieler wählen --</option></select>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3 justify-center mt-6">
+        <button id="btn-show-answer" onclick="showAnswer()" class="bg-[#f5c518] text-[#0a0e2a] font-bold py-2 px-6 rounded-lg">Antwort zeigen</button>
+        <button id="btn-assign-player" onclick="awardPoints(true)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg hidden">Richtig ✓</button>
+        <button id="btn-wrong-player" onclick="awardPoints(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg hidden">Falsch ✗</button>
+        <button id="btn-finish-question" onclick="finishQuestion()" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-2 px-6 rounded-lg hidden">Frage beenden</button>
+        <button onclick="skipQuestion()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Nicht beantwortet</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="score-edit-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-[100001]">
+    <div class="bg-[#1a237e] rounded-2xl p-6 max-w-sm w-full text-center border-2 border-[#f5c518]">
+      <h2 class="text-2xl font-bold text-[#f5c518] mb-2">Punkte ändern</h2>
+      <p id="score-edit-team" class="text-white font-semibold mb-4"></p>
+      <input id="score-edit-input" type="number" step="1" class="w-full bg-[#0a0e2a] text-[#f5c518] border border-[#f5c518] rounded-lg px-4 py-3 text-center text-2xl font-bold mb-4">
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <button type="button" onclick="adjustScoreInput(-100)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg">−100</button>
+        <button type="button" onclick="adjustScoreInput(100)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg">+100</button>
+      </div>
+      <div class="flex gap-3 justify-center">
+        <button type="button" onclick="saveManualScore()" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-2 px-5 rounded-lg">Speichern</button>
+        <button type="button" onclick="closeScoreEditor()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-5 rounded-lg">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CATS = 5, QS = 5, POINTS = [100, 200, 300, 400, 500];
+const PUBLIC_QUIZ_FILE = 'quiz.json';
+const GITHUB_OWNER = 'UmpaLumpa1245';
+const GITHUB_REPO = 'Jeopardy-2';
+const GITHUB_BRANCH = 'main';
+const GITHUB_QUIZ_PATH = 'quiz.json';
+const GITHUB_TOKEN_KEY = 'jeopardy_github_token_v1';
+const STORAGE_KEY_BASE = 'jeopardy_quiz_board_v5';
+const TITLE_KEY_BASE = 'jeopardy_quiz_title_v5';
+const ACTIVE_BOARD_KEY = 'jeopardy_active_board_v1';
+const BOARD_COUNT_KEY = 'jeopardy_board_count_v1';
+let currentBoardId = localStorage.getItem(ACTIVE_BOARD_KEY) || '1';
+const DB_NAME = 'jeopardy_quiz_images_db_v1';
+function boardSuffix() { return currentBoardId === '1' ? '' : `_board_${currentBoardId}`; }
+function storageKey() { return STORAGE_KEY_BASE + boardSuffix(); }
+function titleKey() { return TITLE_KEY_BASE + boardSuffix(); }
+function boardLabel() { return `Board ${currentBoardId}`; }
+
+function boardSuffixFor(boardId) { return String(boardId) === '1' ? '' : `_board_${boardId}`; }
+function storageKeyFor(boardId) { return STORAGE_KEY_BASE + boardSuffixFor(boardId); }
+function titleKeyFor(boardId) { return TITLE_KEY_BASE + boardSuffixFor(boardId); }
+function imageKeyForBoard(boardId, c, q) { return `board-${boardId}-cell-${c}-${q}`; }
+function answerImageKeyForBoard(boardId, c, q) { return `board-${boardId}-answer-cell-${c}-${q}`; }
+
+function updateBoardImageKeysInData(raw, fromId, toId) {
+  if (!raw) return raw;
+  try {
+    const data = JSON.parse(raw);
+    data.forEach(item => {
+      if (item.image_key === imageKeyForBoard(fromId, item.category_index, item.question_index)) {
+        item.image_key = imageKeyForBoard(toId, item.category_index, item.question_index);
+      }
+      if (item.answer_image_key === answerImageKeyForBoard(fromId, item.category_index, item.question_index)) {
+        item.answer_image_key = answerImageKeyForBoard(toId, item.category_index, item.question_index);
+      }
+    });
+    return JSON.stringify(data);
+  } catch {
+    return raw;
+  }
+}
+
+function getBoardCount() {
+  const saved = Number(localStorage.getItem(BOARD_COUNT_KEY));
+  return Math.max(1, Number.isFinite(saved) ? Math.floor(saved) : 2);
+}
+
+function setBoardCount(count) {
+  localStorage.setItem(BOARD_COUNT_KEY, String(Math.max(1, Math.floor(count))));
+}
+
+function showBoardMenuMessage(text) {
+  let msg = document.getElementById('board-menu-message');
+  const wrap = document.getElementById('board-list')?.parentElement;
+  if (!wrap) return;
+  if (!msg) {
+    msg = document.createElement('p');
+    msg.id = 'board-menu-message';
+    msg.className = 'text-center text-green-300 font-semibold mt-2';
+    wrap.appendChild(msg);
+  }
+  msg.textContent = text;
+  msg.classList.remove('hidden');
+  clearTimeout(showBoardMenuMessage._timer);
+  showBoardMenuMessage._timer = setTimeout(() => msg.classList.add('hidden'), 2500);
+}
+
+function renderBoardMenu() {
+  const list = document.getElementById('board-list');
+  if (!list) return;
+  const count = getBoardCount();
+  list.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const card = document.createElement('div');
+    card.className = 'bg-[#0f1347] rounded-xl p-4 border border-[#f5c518]/40';
+    card.innerHTML = `
+      <p class="text-[#f5c518] font-bold text-center mb-3">Board ${i}</p>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="openBoard('${i}','edit')" class="bg-[#1a237e] hover:bg-[#283593] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all glow"><i data-lucide="edit-3"></i> Bearbeiten</button>
+        <button onclick="openBoard('${i}','setup')" class="bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all"><i data-lucide="users"></i> Spielen</button>
+      </div>
+      ${count > 1 ? `<button type="button" onclick="deleteBoard('${i}', event)" data-delete-board="${i}" class="delete-board-btn mt-3 w-full bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all"><i data-lucide="trash-2"></i> Board löschen</button>` : ''}
+    `;
+    list.appendChild(card);
+  }
+  applyGlassEffect();
+  if (window.lucide) lucide.createIcons();
+}
+
+function addBoard() {
+  const newCount = getBoardCount() + 1;
+  setBoardCount(newCount);
+  currentBoardId = String(newCount);
+  localStorage.setItem(ACTIVE_BOARD_KEY, currentBoardId);
+  localBoard = emptyBoard();
+  persistBoard(localBoard);
+  renderBoardMenu();
+  openBoard(currentBoardId, 'edit');
+}
+
+async function copyBoardImages(fromId, toId) {
+  for (let c = 0; c < CATS; c++) {
+    for (let q = 0; q < QS; q++) {
+      const pairs = [
+        [imageKeyForBoard(fromId, c, q), imageKeyForBoard(toId, c, q)],
+        [answerImageKeyForBoard(fromId, c, q), answerImageKeyForBoard(toId, c, q)]
+      ];
+      for (const [fromKey, toKey] of pairs) {
+        try {
+          const value = await idbGet(fromKey);
+          if (value) await idbSet(toKey, value);
+          else await idbDelete(toKey).catch(() => {});
+        } catch (e) {
+          console.warn('Board-Bild konnte nicht verschoben werden:', e);
+        }
+      }
+    }
+  }
+}
+
+async function deleteStoredBoardImages(boardId) {
+  for (let c = 0; c < CATS; c++) {
+    for (let q = 0; q < QS; q++) {
+      await idbDelete(imageKeyForBoard(boardId, c, q)).catch(() => {});
+      await idbDelete(answerImageKeyForBoard(boardId, c, q)).catch(() => {});
+    }
+  }
+}
+
+async function moveStoredBoardImages(fromId, toId) {
+  for (let c = 0; c < CATS; c++) {
+    for (let q = 0; q < QS; q++) {
+      const pairs = [
+        [imageKeyForBoard(fromId, c, q), imageKeyForBoard(toId, c, q)],
+        [answerImageKeyForBoard(fromId, c, q), answerImageKeyForBoard(toId, c, q)]
+      ];
+      for (const [fromKey, toKey] of pairs) {
+        try {
+          const value = await idbGet(fromKey);
+          if (value) await idbSet(toKey, value);
+          else await idbDelete(toKey).catch(() => {});
+          await idbDelete(fromKey).catch(() => {});
+        } catch (e) {
+          console.warn('Bilddaten konnten nicht verschoben werden:', e);
+        }
+      }
+    }
+  }
+}
+
+async function deleteBoard(boardId, event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  boardId = Number(boardId);
+  const count = getBoardCount();
+
+  if (!Number.isFinite(boardId) || boardId < 1 || boardId > count) {
+    alert('Dieses Board existiert nicht mehr.');
+    renderBoardMenu();
+    return false;
+  }
+
+  if (count <= 1) {
+    alert('Das letzte Board kann nicht gelöscht werden.');
+    return false;
+  }
+
+  // Sofort löschen: Browser-Previews blockieren confirm()-Dialoge manchmal,
+  // wodurch der Knopf scheinbar nichts macht.
+
+  try {
+    const editView = document.getElementById('view-edit');
+    if (editView && !editView.classList.contains('hidden')) {
+      syncEditInputs();
+      persistBoard(localBoard);
+    }
+
+    // Snapshot aller späteren Boards anlegen, bevor wir Ziel-Keys überschreiben.
+    const movedBoards = [];
+    for (let id = boardId + 1; id <= count; id++) {
+      movedBoards.push({
+        fromId: id,
+        toId: id - 1,
+        raw: localStorage.getItem(storageKeyFor(id)),
+        title: localStorage.getItem(titleKeyFor(id))
+      });
+    }
+
+    // Gelöschtes Board entfernen.
+    localStorage.removeItem(storageKeyFor(boardId));
+    localStorage.removeItem(titleKeyFor(boardId));
+    await deleteStoredBoardImages(boardId);
+
+    // Spätere Boards lückenlos nach vorne ziehen.
+    for (const moved of movedBoards) {
+      if (moved.raw) {
+        localStorage.setItem(storageKeyFor(moved.toId), updateBoardImageKeysInData(moved.raw, moved.fromId, moved.toId));
+      } else {
+        localStorage.removeItem(storageKeyFor(moved.toId));
+      }
+
+      if (moved.title) localStorage.setItem(titleKeyFor(moved.toId), moved.title);
+      else localStorage.removeItem(titleKeyFor(moved.toId));
+
+      await moveStoredBoardImages(moved.fromId, moved.toId);
+    }
+
+    // Das alte letzte Board gibt es nach dem Nachrücken nicht mehr.
+    localStorage.removeItem(storageKeyFor(count));
+    localStorage.removeItem(titleKeyFor(count));
+    await deleteStoredBoardImages(count);
+
+    setBoardCount(count - 1);
+
+    const current = Number(currentBoardId);
+    if (current === boardId) currentBoardId = String(Math.min(boardId, count - 1));
+    else if (current > boardId) currentBoardId = String(current - 1);
+    else currentBoardId = String(current || 1);
+
+    localStorage.setItem(ACTIVE_BOARD_KEY, currentBoardId);
+    loadBoard();
+    localBoard = getBoard();
+    revealedCells.clear();
+    updateBoardLabels();
+    showView('menu');
+    showBoardMenuMessage(`Board ${boardId} wurde komplett gelöscht.`);
+    return false;
+  } catch (e) {
+    console.error('Board konnte nicht gelöscht werden:', e);
+    alert('Das Board konnte nicht gelöscht werden. Bitte die Seite neu laden und erneut versuchen.');
+    return false;
+  }
+}
+
+// Ein einziger Klick-Handler für alle Löschknöpfe. Das ist zuverlässiger als inline onclick.
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-delete-board]');
+  if (!btn) return;
+  event.preventDefault();
+  event.stopPropagation();
+  deleteBoard(btn.dataset.deleteBoard, event);
+});
+
+// Wichtig für onclick="...": in einigen Browser-/Preview-Umgebungen sind Funktionen nicht automatisch global.
+window.deleteBoard = deleteBoard;
+
+function openBoard(boardId, viewName) {
+  currentBoardId = String(boardId);
+  localStorage.setItem(ACTIVE_BOARD_KEY, currentBoardId);
+  loadBoard();
+  localBoard = getBoard();
+  revealedCells.clear();
+  updateBoardLabels();
+  showView(viewName);
+}
+function updateBoardLabels() {
+  const editLabel = document.getElementById('edit-board-label');
+  const setupLabel = document.getElementById('setup-board-label');
+  if (editLabel) editLabel.textContent = boardLabel();
+  if (setupLabel) setupLabel.textContent = boardLabel();
+}
+const THEME_KEY = 'jeopardy_theme_v1';
+const BG_IMAGE_KEY = 'jeopardy_custom_background_image_v1';
+const STORE_NAME = 'images';
+let allData = [], localBoard = [], players = [], revealedCells = new Set(), currentCell = null, scoreEditPlayerId = null;
+let dbPromise = null;
+
+function openImageDb() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) return reject(new Error('IndexedDB wird in diesem Browser nicht unterstützt.'));
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('Bild-Datenbank konnte nicht geöffnet werden.'));
+  });
+  return dbPromise;
+}
+
+async function idbSet(key, value) {
+  const db = await openImageDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(value, key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGet(key) {
+  if (!key) return '';
+  const db = await openImageDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = () => resolve(req.result || '');
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDelete(key) {
+  if (!key) return;
+  const db = await openImageDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function emptyBoard() {
+  const b = [];
+  for (let c = 0; c < CATS; c++) {
+    for (let q = 0; q < QS; q++) {
+      b.push({ category_index: c, question_index: q, category_name: `Kategorie ${c + 1}`, question: '', answer: '', image_url: '', image_key: '', answer_image_url: '', answer_image_key: '', points: POINTS[q], revealed: false });
+    }
+  }
+  return b;
+}
+
+function loadBoard() {
+  try { allData = JSON.parse(localStorage.getItem(storageKey()) || '[]'); }
+  catch { allData = []; }
+}
+
+function cleanBoardForPublic(board) {
+  return (board || []).map(item => {
+    const clean = { ...item };
+    delete clean.image_data;
+    delete clean.answer_image_data;
+    delete clean.image_key;
+    delete clean.answer_image_key;
+    clean.image_url = (clean.image_url || '').trim();
+    clean.answer_image_url = (clean.answer_image_url || '').trim();
+    return clean;
+  });
+}
+
+function persistBoard(board) {
+  allData = cleanBoardForPublic(board);
+  localStorage.setItem(storageKey(), JSON.stringify(allData));
+}
+
+function collectQuizPackage() {
+  syncEditInputs();
+  persistBoard(localBoard);
+  const count = getBoardCount();
+  const boards = [];
+  for (let i = 1; i <= count; i++) {
+    let items = [];
+    try { items = JSON.parse(localStorage.getItem(storageKeyFor(i)) || '[]'); }
+    catch { items = []; }
+    boards.push({
+      id: String(i),
+      title: localStorage.getItem(titleKeyFor(i)) || 'Quizshow',
+      items: cleanBoardForPublic(items)
+    });
+  }
+  return {
+    version: 1,
+    exported_at: new Date().toISOString(),
+    board_count: count,
+    active_board: String(currentBoardId || '1'),
+    boards
+  };
+}
+
+function applyQuizPackage(pkg) {
+  if (!pkg || !Array.isArray(pkg.boards)) return false;
+  const boards = pkg.boards;
+  setBoardCount(Math.max(1, Number(pkg.board_count) || boards.length || 1));
+  boards.forEach((board, index) => {
+    const id = String(board.id || index + 1);
+    localStorage.setItem(storageKeyFor(id), JSON.stringify(cleanBoardForPublic(board.items || [])));
+    if (board.title) localStorage.setItem(titleKeyFor(id), board.title);
+  });
+  currentBoardId = String(pkg.active_board || boards[0]?.id || '1');
+  localStorage.setItem(ACTIVE_BOARD_KEY, currentBoardId);
+  loadBoard();
+  localBoard = getBoard();
+  updateBoardLabels();
+  return true;
+}
+
+async function loadPublicQuizJson() {
+  try {
+    const res = await fetch(PUBLIC_QUIZ_FILE + '?v=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return false;
+    const pkg = await res.json();
+    return applyQuizPackage(pkg);
+  } catch (e) {
+    console.warn('quiz.json konnte nicht geladen werden:', e);
+    return false;
+  }
+}
+
+function exportQuizJson() {
+  const pkg = collectQuizPackage();
+  const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'quiz.json';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  const msg = document.getElementById('save-msg');
+  if (msg) {
+    msg.textContent = 'quiz.json wurde heruntergeladen. Lade diese Datei jetzt auf GitHub hoch.';
+    msg.className = 'text-center mt-4 text-green-400';
+  }
+}
+
+
+function setSaveMessage(text, ok = true) {
+  const msg = document.getElementById('save-msg');
+  if (!msg) return;
+  msg.textContent = text;
+  msg.className = `text-center mt-4 ${ok ? 'text-green-400' : 'text-red-300'}`;
+}
+
+function openGitHubTokenSetup() {
+  const old = localStorage.getItem(GITHUB_TOKEN_KEY) || '';
+  const token = prompt(
+    'GitHub Token einfügen. Er braucht nur Zugriff auf dieses Repository und die Berechtigung: Contents: Read and write.\n\nWichtig: Diesen Token nicht an andere weitergeben.',
+    old
+  );
+  if (token === null) return;
+  const clean = token.trim();
+  if (!clean) {
+    localStorage.removeItem(GITHUB_TOKEN_KEY);
+    setSaveMessage('GitHub Token wurde entfernt.', true);
+    return;
+  }
+  localStorage.setItem(GITHUB_TOKEN_KEY, clean);
+  setSaveMessage('GitHub Token wurde in diesem Browser gespeichert.', true);
+}
+
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+
+async function publishQuizToGitHub() {
+  const token = localStorage.getItem(GITHUB_TOKEN_KEY);
+  if (!token) {
+    openGitHubTokenSetup();
+    if (!localStorage.getItem(GITHUB_TOKEN_KEY)) return;
+  }
+
+  const btn = document.getElementById('publish-btn');
+  const oldText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Veröffentliche...'; }
+  setSaveMessage('Veröffentliche quiz.json auf GitHub...', true);
+
+  try {
+    const pkg = collectQuizPackage();
+    const json = JSON.stringify(pkg, null, 2);
+    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(GITHUB_QUIZ_PATH)}`;
+
+    let sha = null;
+    const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(GITHUB_BRANCH)}`, {
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${localStorage.getItem(GITHUB_TOKEN_KEY)}`,
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    });
+    if (getRes.ok) {
+      const existing = await getRes.json();
+      sha = existing.sha || null;
+    } else if (getRes.status !== 404) {
+      const err = await getRes.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub konnte quiz.json nicht lesen (${getRes.status}).`);
+    }
+
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${localStorage.getItem(GITHUB_TOKEN_KEY)}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Update quiz.json ${new Date().toLocaleString('de-DE')}`,
+        content: utf8ToBase64(json),
+        branch: GITHUB_BRANCH,
+        ...(sha ? { sha } : {})
+      })
+    });
+
+    if (!putRes.ok) {
+      const err = await putRes.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub Veröffentlichung fehlgeschlagen (${putRes.status}).`);
+    }
+
+    setSaveMessage('Veröffentlicht! GitHub Pages braucht eventuell 1–2 Minuten, bis alle Besucher die Änderung sehen.', true);
+  } catch (e) {
+    console.error(e);
+    setSaveMessage('Fehler beim Veröffentlichen: ' + (e.message || e), false);
+    if (String(e.message || '').toLowerCase().includes('bad credentials') || String(e.message || '').toLowerCase().includes('401')) {
+      localStorage.removeItem(GITHUB_TOKEN_KEY);
+      alert('Der GitHub Token ist ungültig oder abgelaufen. Bitte erstelle einen neuen Token und trage ihn erneut ein.');
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = oldText || '🌍 Veröffentlichen'; }
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+function importQuizJson(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const pkg = JSON.parse(reader.result);
+      if (!applyQuizPackage(pkg)) throw new Error('Ungültige quiz.json');
+      renderBoardMenu();
+      renderEditView();
+      const msg = document.getElementById('save-msg');
+      if (msg) { msg.textContent = 'quiz.json wurde geladen.'; msg.className = 'text-center mt-4 text-green-400'; }
+    } catch (e) {
+      alert('Diese quiz.json konnte nicht geladen werden.');
+    } finally { input.value = ''; }
+  };
+  reader.readAsText(file);
+}
+
+function getBoard() {
+  const board = emptyBoard();
+  allData.forEach(d => {
+    const idx = board.findIndex(b => b.category_index === d.category_index && b.question_index === d.question_index);
+    if (idx >= 0) board[idx] = { ...board[idx], ...d, points: POINTS[d.question_index] || d.points || 100 };
+  });
+  return board;
+}
+
+async function getImageSrc(item) {
+  if (!item) return '';
+  return (item.image_url || '').trim();
+}
+
+async function getAnswerImageSrc(item) {
+  if (!item) return '';
+  return (item.answer_image_url || '').trim();
+}
+
+function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function escAttr(s) { return escHtml(s); }
+function imgKey(c, q) { return `board-${currentBoardId}-cell-${c}-${q}`; }
+function answerImgKey(c, q) { return `board-${currentBoardId}-answer-cell-${c}-${q}`; }
+
+
+function applySavedTheme() {
+  const theme = localStorage.getItem(THEME_KEY) || 'theme-space';
+  setTheme(theme, false);
+}
+
+function setTheme(themeName, closePanel = true) {
+  const app = document.getElementById('app');
+  app.classList.remove('theme-space','theme-sunset','theme-forest','theme-retro','custom-bg-image');
+  app.style.removeProperty('--custom-bg-image');
+
+  if (themeName === 'custom-bg-image') {
+    const bgImage = localStorage.getItem(BG_IMAGE_KEY);
+    if (bgImage) {
+      app.style.setProperty('--custom-bg-image', `url("${bgImage}")`);
+      app.classList.add('custom-bg-image');
+      localStorage.setItem(THEME_KEY, 'custom-bg-image');
+    } else {
+      app.classList.add('theme-space');
+      localStorage.setItem(THEME_KEY, 'theme-space');
+    }
+  } else {
+    app.classList.add(themeName);
+    localStorage.setItem(THEME_KEY, themeName);
+  }
+
+  if (closePanel) document.getElementById('theme-panel').classList.add('hidden');
+}
+
+function toggleThemePanel() {
+  document.getElementById('theme-panel').classList.toggle('hidden');
+}
+
+async function handleBackgroundUpload(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  try {
+    const dataUrl = await fileToDataUrl(file);
+    localStorage.setItem(BG_IMAGE_KEY, dataUrl);
+    setTheme('custom-bg-image');
+  } catch (e) {
+    alert(e.message || 'Das Hintergrundbild konnte nicht geladen werden.');
+  } finally {
+    input.value = '';
+  }
+}
+
+function removeCustomBackground() {
+  localStorage.removeItem(BG_IMAGE_KEY);
+  setTheme('theme-space');
+}
+
+
+function applyGlassEffect(){
+ document.querySelectorAll('[class*="bg-[#1a237e]"]').forEach(el=>{
+   el.style.backgroundColor='rgba(255,255,255,0.20)';
+   el.style.backdropFilter='blur(2px)';
+ });
+ document.querySelectorAll('[class*="bg-[#0f1347]"]').forEach(el=>{
+   el.style.backgroundColor='rgba(255,255,255,0.20)';
+   el.style.backdropFilter='blur(2px)';
+ });
+}
+
+function changePlayerCount(delta) {
+  const input = document.getElementById('player-count');
+  input.value = Math.max(1, Math.min(10, (+input.value || 2) + delta));
+  renderTeamNameInputs();
+}
+
+function validatePlayerCount() {
+  const input = document.getElementById('player-count');
+  input.value = Math.max(1, Math.min(10, +input.value || 2));
+  renderTeamNameInputs();
+}
+
+function getSavedTeamNames() {
+  try { return JSON.parse(localStorage.getItem('jeopardy_team_names_v1') || '[]'); }
+  catch { return []; }
+}
+
+function saveTeamNames(names) {
+  localStorage.setItem('jeopardy_team_names_v1', JSON.stringify(names));
+}
+
+function renderTeamNameInputs() {
+  const wrap = document.getElementById('team-name-inputs');
+  const countInput = document.getElementById('player-count');
+  if (!wrap || !countInput) return;
+
+  const oldValues = Array.from(wrap.querySelectorAll('.team-name-input')).map(el => el.value.trim());
+  const savedValues = getSavedTeamNames();
+  const n = Math.max(1, Math.min(10, +countInput.value || 2));
+
+  wrap.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const value = oldValues[i] || savedValues[i] || `Team ${i + 1}`;
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.innerHTML = `
+      <span class="text-[#f5c518] text-sm font-bold w-8">${i + 1}.</span>
+      <input type="text" value="${escAttr(value)}" maxlength="30" class="team-name-input flex-1 bg-[#0a0e2a] text-white border border-[#f5c518]/50 rounded-lg px-3 py-2 text-sm" placeholder="Team ${i + 1}">
+    `;
+    wrap.appendChild(row);
+  }
+}
+
+function syncEditInputs() {
+  if (!localBoard.length) localBoard = getBoard();
+  document.querySelectorAll('.cat-name').forEach(el => {
+    const c = +el.dataset.cat;
+    localBoard.filter(b => b.category_index === c).forEach(b => b.category_name = el.value.trim() || `Kategorie ${c + 1}`);
+  });
+  document.querySelectorAll('.q-input').forEach(el => {
+    const c = +el.dataset.cat, q = +el.dataset.q, f = el.dataset.field;
+    const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+    if (!item) return;
+    if (f === 'image_url') item.image_url = el.value.trim();
+    else if (f === 'answer_image_url') item.answer_image_url = el.value.trim();
+    else item[f] = el.value.trim();
+  });
+}
+
+function showView(v) {
+  updateBoardLabels();
+  const editView = document.getElementById('view-edit');
+  const leavingEdit = editView && !editView.classList.contains('hidden') && v !== 'edit';
+  if (leavingEdit) { syncEditInputs(); persistBoard(localBoard); }
+  ['menu','edit','play','setup'].forEach(id => document.getElementById('view-' + id).classList.add('hidden'));
+  document.getElementById('view-' + v).classList.remove('hidden');
+  document.getElementById('theme-btn')?.classList.toggle('hidden', v !== 'edit');
+  document.getElementById('theme-panel')?.classList.add('hidden');
+  if (v === 'menu') renderBoardMenu();
+  if (v === 'edit') renderEditView();
+  if (v === 'play') renderPlayView();
+  if (v === 'setup') renderTeamNameInputs();
+  applyGlassEffect();
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderEditView() {
+  localBoard = getBoard();
+  const grid = document.getElementById('edit-grid');
+  grid.innerHTML = '';
+  for (let c = 0; c < CATS; c++) {
+    const col = document.createElement('div');
+    col.className = 'flex flex-col gap-2';
+    const catItem = localBoard.find(b => b.category_index === c);
+    col.innerHTML = `<input type="text" value="${escAttr(catItem.category_name)}" data-cat="${c}" class="cat-name bg-[#1a237e] border border-[#f5c518]/50 rounded-lg p-2 text-[#f5c518] font-bold text-center text-sm" placeholder="Kategorie">`;
+    for (let q = 0; q < QS; q++) {
+      const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+      const hasImage = !!(item.image_url);
+      const hasAnswerImage = !!(item.answer_image_url);
+      col.innerHTML += `
+        <div class="bg-[#0f1347] border border-[#f5c518]/20 rounded-lg p-2 space-y-1">
+          <p class="text-[#f5c518] text-xs font-bold">${POINTS[q]} Punkte</p>
+          <input type="text" value="${escAttr(item.question)}" data-cat="${c}" data-q="${q}" data-field="question" class="q-input w-full bg-[#1a237e] border border-white/20 rounded p-1 text-xs text-white" placeholder="Frage">
+          <input type="text" value="${escAttr(item.answer)}" data-cat="${c}" data-q="${q}" data-field="answer" class="q-input w-full bg-[#1a237e] border border-white/20 rounded p-1 text-xs text-white" placeholder="Antwort">
+          <div class="mt-2 border-t border-white/10 pt-2">
+            <p class="text-[11px] text-[#f5c518] font-bold">Bild zur Frage</p>
+            <input type="text" value="${escAttr(item.image_url || '')}" data-cat="${c}" data-q="${q}" data-field="image_url" class="q-input w-full bg-[#1a237e] border border-white/20 rounded p-1 text-xs text-white mt-1" placeholder="Öffentliche Bild-URL, z.B. ./images/frage1.jpg">
+            <div id="preview-${c}-${q}" class="${hasImage ? '' : 'hidden'}">
+              <img id="preview-img-${c}-${q}" alt="Fragebild Preview" class="w-full h-24 object-contain rounded mt-1 bg-[#0a0e2a] border border-white/10">
+            </div>
+            <p id="img-status-${c}-${q}" class="text-[11px] ${hasImage ? 'text-green-300' : 'text-white/50'}">${hasImage ? 'Fragebild-URL vorhanden.' : 'Noch keine Fragebild-URL eingetragen.'}</p>
+            ${hasImage ? `<button type="button" onclick="removeImage(${c}, ${q})" class="w-full bg-red-700 hover:bg-red-600 text-white rounded p-1 text-xs">Fragebild-URL entfernen</button>` : ''}
+          </div>
+          <div class="mt-2 border-t border-white/10 pt-2">
+            <p class="text-[11px] text-[#f5c518] font-bold">Bild zur Antwort</p>
+            <input type="text" value="${escAttr(item.answer_image_url || '')}" data-cat="${c}" data-q="${q}" data-field="answer_image_url" class="q-input w-full bg-[#1a237e] border border-white/20 rounded p-1 text-xs text-white mt-1" placeholder="Öffentliche Bild-URL, z.B. ./images/antwort1.jpg">
+            <div id="answer-preview-${c}-${q}" class="${hasAnswerImage ? '' : 'hidden'}">
+              <img id="answer-preview-img-${c}-${q}" alt="Antwortbild Preview" class="w-full h-24 object-contain rounded mt-1 bg-[#0a0e2a] border border-white/10">
+            </div>
+            <p id="answer-img-status-${c}-${q}" class="text-[11px] ${hasAnswerImage ? 'text-green-300' : 'text-white/50'}">${hasAnswerImage ? 'Antwortbild-URL vorhanden.' : 'Noch keine Antwortbild-URL eingetragen.'}</p>
+            ${hasAnswerImage ? `<button type="button" onclick="removeAnswerImage(${c}, ${q})" class="w-full bg-red-700 hover:bg-red-600 text-white rounded p-1 text-xs">Antwortbild-URL entfernen</button>` : ''}
+          </div>
+        </div>`;
+    }
+    grid.appendChild(col);
+  }
+  loadAllEditPreviews();
+}
+
+async function loadAllEditPreviews() {
+  for (const item of localBoard) {
+    const c = item.category_index, q = item.question_index;
+    const img = document.getElementById(`preview-img-${c}-${q}`);
+    const box = document.getElementById(`preview-${c}-${q}`);
+    if (!img || !box) continue;
+    const src = await getImageSrc(item);
+    if (src) { img.src = src; box.classList.remove('hidden'); }
+    else { img.removeAttribute('src'); box.classList.add('hidden'); }
+
+    const answerImg = document.getElementById(`answer-preview-img-${c}-${q}`);
+    const answerBox = document.getElementById(`answer-preview-${c}-${q}`);
+    if (answerImg && answerBox) {
+      const answerSrc = await getAnswerImageSrc(item);
+      if (answerSrc) { answerImg.src = answerSrc; answerBox.classList.remove('hidden'); }
+      else { answerImg.removeAttribute('src'); answerBox.classList.add('hidden'); }
+    }
+  }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) return reject(new Error('Bitte eine Bilddatei auswählen.'));
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Das Bild konnte nicht gelesen werden.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImageUpload(c, q, input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const status = document.getElementById(`img-status-${c}-${q}`);
+  try {
+    if (status) { status.textContent = 'Bild wird gespeichert...'; status.className = 'text-[11px] text-yellow-200'; }
+    syncEditInputs();
+    const dataUrl = await fileToDataUrl(file);
+    const key = imgKey(c, q);
+    await idbSet(key, dataUrl);
+    const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+    if (item) { item.image_key = key; item.image_url = ''; delete item.image_data; }
+    persistBoard(localBoard);
+    renderEditView();
+  } catch (e) {
+    if (status) { status.textContent = 'Bild konnte nicht gespeichert werden.'; status.className = 'text-[11px] text-red-300'; }
+    alert(e.message || 'Das Bild konnte nicht eingefügt werden.');
+  } finally { input.value = ''; }
+}
+
+async function removeImage(c, q) {
+  syncEditInputs();
+  const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+  if (item) {
+    item.image_key = '';
+    item.image_url = '';
+    delete item.image_data;
+  }
+  persistBoard(localBoard);
+  renderEditView();
+}
+
+async function handleAnswerImageUpload(c, q, input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const status = document.getElementById(`answer-img-status-${c}-${q}`);
+  try {
+    if (status) { status.textContent = 'Antwortbild wird gespeichert...'; status.className = 'text-[11px] text-yellow-200'; }
+    syncEditInputs();
+    const dataUrl = await fileToDataUrl(file);
+    const key = answerImgKey(c, q);
+    await idbSet(key, dataUrl);
+    const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+    if (item) { item.answer_image_key = key; item.answer_image_url = ''; delete item.answer_image_data; }
+    persistBoard(localBoard);
+    renderEditView();
+  } catch (e) {
+    if (status) { status.textContent = 'Antwortbild konnte nicht gespeichert werden.'; status.className = 'text-[11px] text-red-300'; }
+    alert(e.message || 'Das Antwortbild konnte nicht eingefügt werden.');
+  } finally { input.value = ''; }
+}
+
+async function removeAnswerImage(c, q) {
+  syncEditInputs();
+  const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+  if (item) {
+    item.answer_image_key = '';
+    item.answer_image_url = '';
+    delete item.answer_image_data;
+  }
+  persistBoard(localBoard);
+  renderEditView();
+}
+
+function saveAll() {
+  const btn = document.getElementById('save-btn'), msg = document.getElementById('save-msg');
+  btn.disabled = true; btn.textContent = 'Speichern...';
+  try {
+    syncEditInputs(); persistBoard(localBoard);
+    msg.textContent = 'Gespeichert!'; msg.className = 'text-center mt-4 text-green-400';
+    setTimeout(() => msg.classList.add('hidden'), 2500);
+  } catch (e) {
+    msg.textContent = 'Speichern fehlgeschlagen.'; msg.className = 'text-center mt-4 text-red-400';
+  }
+  btn.disabled = false; btn.innerHTML = '<i data-lucide="save"></i> Lokal speichern';
+  if (window.lucide) lucide.createIcons();
+}
+
+function startGameSetup() {
+  validatePlayerCount();
+  const n = +document.getElementById('player-count').value;
+  const inputs = Array.from(document.querySelectorAll('.team-name-input'));
+  const names = Array.from({ length: n }, (_, i) => {
+    const typed = inputs[i] ? inputs[i].value.trim() : '';
+    return typed || `Team ${i + 1}`;
+  });
+  saveTeamNames(names);
+  players = names.map((name, i) => ({ id: i + 1, name, score: 0 }));
+  revealedCells.clear();
+  showView('play');
+}
+
+
+function fitCategoryHeaders() {
+  document.querySelectorAll('#play-grid .category-header').forEach(el => {
+    let size = 26;   // smaller starting size
+    el.style.fontSize = size + 'px';
+
+    while ((el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight) && size > 8){
+      size -= 1;
+      el.style.fontSize = size + 'px';
+    }
+  });
+}
+
+function renderPlayView() {
+  localBoard = getBoard();
+  document.getElementById('play-title').textContent = localStorage.getItem(titleKey()) || 'Quizshow';
+  const grid = document.getElementById('play-grid'); grid.innerHTML = '';
+  for (let c = 0; c < CATS; c++) {
+    const cat = localBoard.find(b => b.category_index === c);
+    const header = document.createElement('div');
+    header.className = 'category-header bg-[#1a237e] text-[#f5c518] text-center font-bold py-3 rounded-lg text-sm uppercase tracking-wider';
+    header.textContent = cat.category_name;
+    grid.appendChild(header);
+  }
+  for (let q = 0; q < QS; q++) for (let c = 0; c < CATS; c++) {
+    const key = `${c}-${q}`, revealed = revealedCells.has(key);
+    const btn = document.createElement('button');
+    btn.className = `py-4 rounded-lg font-bold text-xl transition-all ${revealed ? 'bg-[#0f1347]/50 text-white/20 cursor-default' : 'bg-[#1a237e] text-[#f5c518] hover:bg-[#283593] glow bg-override-white-hover'}`;
+    btn.textContent = revealed ? '—' : POINTS[q];
+    btn.disabled = revealed;
+    btn.onclick = () => openQuestion(c, q);
+    grid.appendChild(btn);
+  }
+  const scoreContainer = document.getElementById('player-scores');
+  scoreContainer.innerHTML = ''; scoreContainer.style.gridTemplateColumns = `repeat(${players.length || 1}, 1fr)`;
+  players.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'bg-[#1a237e] border border-[#f5c518]/50 rounded-lg p-3 text-center';
+    card.innerHTML = `<p class="text-white text-sm font-semibold">${escHtml(p.name)}</p><p class="text-[#f5c518] text-xl font-bold">${p.score}</p><button type="button" onclick="openScoreEditor(${p.id})" class="mt-2 bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-1 px-3 rounded text-xs">Punkte ändern</button>`;
+    scoreContainer.appendChild(card);
+  });
+  fitCategoryHeaders();
+}
+
+async function openQuestion(c, q) {
+  const item = localBoard.find(b => b.category_index === c && b.question_index === q);
+  if (!item || !item.question) return;
+  currentCell = { c, q, points: item.points };
+  document.getElementById('modal-cat').textContent = `${item.category_name} — ${item.points} Punkte`;
+  document.getElementById('modal-question').textContent = item.question;
+  document.getElementById('modal-answer-text').textContent = item.answer || 'Keine Antwort eingetragen.';
+  document.getElementById('modal-answer').classList.add('hidden');
+  document.getElementById('btn-show-answer').classList.remove('hidden');
+  document.getElementById('btn-assign-player').classList.add('hidden');
+  document.getElementById('btn-wrong-player')?.classList.add('hidden');
+  document.getElementById('btn-finish-question')?.classList.add('hidden');
+  const select = document.getElementById('player-select');
+  select.innerHTML = '<option value="">-- Wählen --</option>';
+  players.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name; select.appendChild(opt); });
+
+  const quickWrongButtons = document.getElementById('quick-wrong-buttons');
+  if (quickWrongButtons) {
+    quickWrongButtons.innerHTML = '';
+    players.forEach(p => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg';
+      btn.textContent = `${p.name} −${Math.floor(item.points * 0.5)}`;
+      btn.onclick = () => subtractWrongPoints(p.id);
+      quickWrongButtons.appendChild(btn);
+    });
+  }
+
+  const imageContainer = document.getElementById('modal-image-container');
+  const modalImage = document.getElementById('modal-image');
+  const imageError = document.getElementById('modal-image-error');
+  modalImage.removeAttribute('src'); imageError.classList.add('hidden'); imageContainer.classList.add('hidden');
+
+  const answerImageContainer = document.getElementById('modal-answer-image-container');
+  const answerImage = document.getElementById('modal-answer-image');
+  const answerImageError = document.getElementById('modal-answer-image-error');
+  answerImage.removeAttribute('src'); answerImageError.classList.add('hidden'); answerImageContainer.classList.add('hidden');
+
+  document.getElementById('modal').classList.remove('hidden');
+
+  const src = await getImageSrc(item);
+  if (src && currentCell && currentCell.c === c && currentCell.q === q) {
+    imageContainer.classList.remove('hidden');
+    modalImage.onload = () => { imageError.classList.add('hidden'); modalImage.classList.remove('hidden'); };
+    modalImage.onerror = () => { modalImage.classList.add('hidden'); imageError.classList.remove('hidden'); };
+    modalImage.src = src;
+  }
+
+  const answerSrc = await getAnswerImageSrc(item);
+  if (answerSrc && currentCell && currentCell.c === c && currentCell.q === q) {
+    answerImageContainer.classList.remove('hidden');
+    answerImage.onload = () => { answerImageError.classList.add('hidden'); answerImage.classList.remove('hidden'); };
+    answerImage.onerror = () => { answerImage.classList.add('hidden'); answerImageError.classList.remove('hidden'); };
+    answerImage.src = answerSrc;
+  }
+}
+
+function subtractWrongPoints(playerId) {
+ const p = players.find(x => x.id === playerId);
+ if (!p || !currentCell) return;
+ p.score -= Math.floor(currentCell.points * 0.5);
+ renderScoreCardsOnly();
+}
+
+function manualChangeScore(playerId) {
+  openScoreEditor(playerId);
+}
+
+function openScoreEditor(playerId) {
+  const p = players.find(x => x.id === playerId);
+  if (!p) return;
+  scoreEditPlayerId = playerId;
+  document.getElementById('score-edit-team').textContent = p.name;
+  const input = document.getElementById('score-edit-input');
+  input.value = p.score;
+  document.getElementById('score-edit-modal').classList.remove('hidden');
+  setTimeout(() => { input.focus(); input.select(); }, 0);
+}
+
+function closeScoreEditor() {
+  document.getElementById('score-edit-modal').classList.add('hidden');
+  scoreEditPlayerId = null;
+}
+
+function adjustScoreInput(delta) {
+  const input = document.getElementById('score-edit-input');
+  input.value = Math.round((Number(input.value) || 0) + delta);
+}
+
+function saveManualScore() {
+  const p = players.find(x => x.id === scoreEditPlayerId);
+  const input = document.getElementById('score-edit-input');
+  const newScore = Number(String(input.value).trim().replace(',', '.'));
+  if (!p || !Number.isFinite(newScore)) {
+    alert('Bitte eine gültige Zahl eingeben.');
+    return;
+  }
+  p.score = Math.round(newScore);
+  closeScoreEditor();
+  renderScoreCardsOnly();
+}
+
+function showAnswer() { 
+ document.getElementById('modal-answer').classList.remove('hidden'); 
+ document.getElementById('btn-show-answer').classList.add('hidden'); 
+
+ document.getElementById('btn-assign-player').classList.remove('hidden');
+ document.getElementById('btn-wrong-player').classList.remove('hidden');
+ document.getElementById('btn-finish-question').classList.remove('hidden');
+}
+function awardPoints(correct = true) { 
+ const id = +document.getElementById('player-select').value; 
+ if (!id || !currentCell) return; 
+ const p = players.find(x => x.id === id); 
+
+ if (p) {
+   if (correct) {
+     p.score += currentCell.points;
+   } else {
+     p.score -= Math.floor(currentCell.points * 0.5);
+   }
+ }
+
+ document.getElementById('player-select').value = '';
+ renderScoreCardsOnly();
+}
+function skipQuestion() { if (currentCell) revealedCells.add(`${currentCell.c}-${currentCell.q}`); closeModalAndRender(); }
+
+function finishQuestion() {
+  if (currentCell) revealedCells.add(`${currentCell.c}-${currentCell.q}`);
+  closeModalAndRender();
+}
+
+function renderScoreCardsOnly() {
+  const scoreContainer = document.getElementById('player-scores');
+  if (!scoreContainer) return;
+  scoreContainer.innerHTML = '';
+  scoreContainer.style.gridTemplateColumns = `repeat(${players.length || 1}, 1fr)`;
+  players.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'bg-[#1a237e] border border-[#f5c518]/50 rounded-lg p-3 text-center';
+    card.innerHTML = `<p class="text-white text-sm font-semibold">${escHtml(p.name)}</p><p class="text-[#f5c518] text-xl font-bold">${p.score}</p><button type="button" onclick="openScoreEditor(${p.id})" class="mt-2 bg-[#f5c518] hover:bg-[#ffda44] text-[#0a0e2a] font-bold py-1 px-3 rounded text-xs">Punkte ändern</button>`;
+    scoreContainer.appendChild(card);
+  });
+}
+
+function closeModalAndRender() { document.getElementById('modal').classList.add('hidden'); renderPlayView(); }
+
+
+window.openScoreEditor = openScoreEditor;
+window.closeScoreEditor = closeScoreEditor;
+window.adjustScoreInput = adjustScoreInput;
+window.saveManualScore = saveManualScore;
+window.manualChangeScore = manualChangeScore;
+
+document.getElementById('score-edit-input')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveManualScore();
+  if (e.key === 'Escape') closeScoreEditor();
+});
+
+
+
+
+// Sicherheitsnetz: Funktionen und Buttons explizit global verbinden.
+window.saveAll = saveAll;
+window.publishQuizToGitHub = publishQuizToGitHub;
+window.openGitHubTokenSetup = openGitHubTokenSetup;
+window.exportQuizJson = exportQuizJson;
+window.importQuizJson = importQuizJson;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const bind = (id, fn) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fn();
+    });
+  };
+  bind('save-btn', saveAll);
+  bind('publish-btn', publishQuizToGitHub);
+  bind('token-btn', openGitHubTokenSetup);
+  bind('export-btn', exportQuizJson);
+});
+
+window.addEventListener('resize', fitCategoryHeaders);
+async function initApp() {
+  await loadPublicQuizJson();
+  loadBoard();
+  localBoard = getBoard();
+  renderBoardMenu();
+  updateBoardLabels();
+  applySavedTheme();
+  renderTeamNameInputs();
+  applyGlassEffect();
+  if (window.lucide) lucide.createIcons();
+}
+initApp();
+</script>
+
+</body>
+</html>
