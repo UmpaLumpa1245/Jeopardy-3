@@ -210,6 +210,43 @@
   color: #fde68a;
   font-weight: 700;
 }
+
+.host-timer-status {
+  margin-top: .5rem;
+  padding: .65rem;
+  border-radius: .8rem;
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(96,165,250,.35);
+  color: #bfdbfe;
+  font-weight: 800;
+}
+.join-timer-panel {
+  width: 100%;
+  margin-top: .35rem;
+  padding-top: .5rem;
+  border-top: 1px solid rgba(255,255,255,.18);
+}
+.join-timer-track {
+  width: 100%;
+  height: 1.15rem;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.join-timer-bar {
+  height: 100%;
+  width: 100%;
+  background: #dc2626;
+  border-radius: 9999px;
+  transition: width .2s linear;
+}
+.join-timer-text {
+  margin-top: .25rem;
+  font-size: .82rem;
+  color: #bfdbfe;
+  font-weight: 900;
+}
 @media (max-width: 700px) {
   .join-play-area { flex-direction: column; }
   .join-buzzer-panel { width: 100%; min-width: 0; }
@@ -307,6 +344,9 @@
         <button type="button" onclick="unlockHostedBuzzer()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg">🔓 Freigeben</button>
         <button type="button" onclick="lockHostedBuzzer()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg">🔒 Sperren</button>
         <button type="button" onclick="resetHostedBuzzer()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">↺ Buzzer reset</button>
+        <button type="button" onclick="startHostedTimer(15)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">⏱ 15 Sek.</button>
+        <button type="button" onclick="startHostedTimer(10)" class="bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">⏱ 10 Sek.</button>
+        <button type="button" onclick="stopHostedTimer()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg">Timer stoppen</button>
         <button type="button" onclick="closeHostedBoardRoom()" class="bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">✖ Raum schließen</button>
       </div>
       <p class="text-sm text-white/80 text-center">Beitrittscode / Link:</p>
@@ -328,8 +368,12 @@
           <button type="button" onclick="unlockHostedBuzzer()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg">🔓 Freigeben</button>
           <button type="button" onclick="lockHostedBuzzer()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg">🔒 Sperren</button>
           <button type="button" onclick="resetHostedBuzzer()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">↺ Reset</button>
+          <button type="button" onclick="startHostedTimer(15)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">⏱ 15 Sek.</button>
+          <button type="button" onclick="startHostedTimer(10)" class="bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">⏱ 10 Sek.</button>
+          <button type="button" onclick="stopHostedTimer()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg">Timer stoppen</button>
         </div>
         <div id="host-buzzer-status" class="host-buzzer-status">Buzzer ist aus.</div>
+        <div id="host-timer-status" class="host-timer-status hidden">Timer ist aus.</div>
       </div>
       <div id="quick-wrong-area" class="mb-5">
         <p class="text-white text-sm mb-2">Falsche Antwort direkt abziehen:</p>
@@ -395,6 +439,10 @@
         <div id="join-buzzer-panel" class="join-buzzer-panel hidden">
           <button id="join-buzzer-button" type="button" onclick="playerBuzz()" class="join-buzzer-button">BUZZ</button>
           <div id="join-buzzer-status" class="join-buzzer-status">Warte auf den Host.</div>
+          <div id="join-timer-panel" class="join-timer-panel hidden">
+            <div class="join-timer-track"><div id="join-timer-bar" class="join-timer-bar"></div></div>
+            <div id="join-timer-text" class="join-timer-text">15</div>
+          </div>
         </div>
         <div id="join-board-grid" class="player-board-grid flex-1"></div>
       </div>
@@ -1600,7 +1648,7 @@ function renderScoreCardsOnly() {
   });
 }
 
-function closeModalAndRender() { document.getElementById('modal').classList.add('hidden'); currentCell = null; hostedAnswerVisibleToPlayers = false; hostedBuzzerState = null; document.getElementById('btn-show-answer-to-players')?.classList.add('hidden'); renderPlayView(); if (hostedRoomId) syncHostedBoard(); }
+function closeModalAndRender() { document.getElementById('modal').classList.add('hidden'); currentCell = null; hostedAnswerVisibleToPlayers = false; hostedBuzzerState = null; hostedTimerState = null; document.getElementById('btn-show-answer-to-players')?.classList.add('hidden'); renderPlayView(); if (hostedRoomId) syncHostedBoard(); }
 
 
 window.openScoreEditor = openScoreEditor;
@@ -1625,6 +1673,9 @@ let hostedUnsubscribe = null;
 let joinedRoomId = '';
 let joinedRoomData = null;
 let hostedBuzzerState = null;
+let hostedTimerState = null;
+let hostTimerInterval = null;
+let joinTimerInterval = null;
 
 function randomRoomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -1681,6 +1732,7 @@ async function collectHostedState() {
       answerShown: !!hostedAnswerVisibleToPlayers
     } : null,
     buzzer: hostedBuzzerState || null,
+    timer: hostedTimerState || null,
     updatedAt: Date.now()
   };
 }
@@ -1702,7 +1754,8 @@ async function createHostedBoardRoom() {
     ...data,
     createdAt: Date.now(),
     participants: {},
-    buzzer: hostedBuzzerState || null
+    buzzer: hostedBuzzerState || null,
+    timer: hostedTimerState || null
   }).then(() => {
     listenHostedBoardRoom();
     renderHostBoardPanel();
@@ -1752,6 +1805,7 @@ function renderHostBoardPanel(data = null) {
       : '<div class="text-white/60 text-center">Noch keine Teams beigetreten.</div>';
   }
   renderHostBuzzerStatus(data || { buzzer: hostedBuzzerState });
+  renderHostTimerStatus(data || { timer: hostedTimerState });
 }
 
 function listenHostedBoardRoom() {
@@ -1762,8 +1816,10 @@ function listenHostedBoardRoom() {
   hostedUnsubscribe = fb.onValue(fb.ref(fb.db, `rooms/${hostedRoomId}`), snap => {
     const roomData = snap.val() || {};
     hostedBuzzerState = roomData.buzzer || hostedBuzzerState || null;
+    hostedTimerState = roomData.timer || hostedTimerState || null;
     renderHostBoardPanel(roomData);
     renderHostBuzzerStatus(roomData);
+    renderHostTimerStatus(roomData);
   });
   renderHostBoardPanel();
 }
@@ -1957,6 +2013,84 @@ function getTeamNameById(teamId) {
   return p ? p.name : 'Team';
 }
 
+
+function timerIsForCurrentQuestion(timer, currentKey) {
+  return !!(timer && timer.active && currentKey && timer.questionKey === currentKey && Number(timer.endsAt || 0) > Date.now());
+}
+
+function getTimerRemainingMs(timer) {
+  return Math.max(0, Number(timer?.endsAt || 0) - Date.now());
+}
+
+function renderHostTimerStatus(data = null) {
+  const el = document.getElementById('host-timer-status');
+  if (!el) return;
+  const timer = (data && data.timer) || hostedTimerState;
+  clearInterval(hostTimerInterval);
+  hostTimerInterval = null;
+
+  if (!hostedRoomId || !timer || !timer.active) {
+    el.classList.add('hidden');
+    el.textContent = 'Timer ist aus.';
+    return;
+  }
+
+  el.classList.remove('hidden');
+  const updateText = () => {
+    const remaining = getTimerRemainingMs(timer);
+    const seconds = Math.ceil(remaining / 1000);
+    if (remaining <= 0) {
+      el.textContent = '⏱ Zeit abgelaufen!';
+      clearInterval(hostTimerInterval);
+      hostTimerInterval = null;
+      return;
+    }
+    el.textContent = `⏱ Timer läuft: ${seconds} Sek.`;
+  };
+  updateText();
+  hostTimerInterval = setInterval(updateText, 250);
+}
+
+async function startHostedTimer(seconds) {
+  if (!hostedRoomId) {
+    alert('Hoste zuerst das Board.');
+    return;
+  }
+  if (!currentCell) {
+    alert('Öffne zuerst eine Frage. Dann kann der Timer gestartet werden.');
+    return;
+  }
+  const fb = getFirebaseTools();
+  if (!fb) return;
+  const now = Date.now();
+  hostedTimerState = {
+    active: true,
+    duration: Number(seconds),
+    questionKey: getCurrentQuestionKey(),
+    startedAt: now,
+    endsAt: now + Number(seconds) * 1000
+  };
+  await fb.update(fb.ref(fb.db, `rooms/${hostedRoomId}`), {
+    timer: hostedTimerState,
+    updatedAt: Date.now()
+  }).catch(err => alert('Timer konnte nicht gestartet werden: ' + err.message));
+  renderHostTimerStatus({ timer: hostedTimerState });
+}
+
+async function stopHostedTimer() {
+  if (!hostedRoomId) return;
+  const fb = getFirebaseTools();
+  if (!fb) return;
+  hostedTimerState = null;
+  clearInterval(hostTimerInterval);
+  hostTimerInterval = null;
+  await fb.update(fb.ref(fb.db, `rooms/${hostedRoomId}`), {
+    timer: null,
+    updatedAt: Date.now()
+  }).catch(err => alert('Timer konnte nicht gestoppt werden: ' + err.message));
+  renderHostTimerStatus({ timer: null });
+}
+
 function renderHostBuzzerStatus(data = null) {
   const el = document.getElementById('host-buzzer-status');
   if (!el) return;
@@ -2091,8 +2225,10 @@ function renderJoinBuzzer(data) {
   const current = data.currentQuestion;
   const currentKey = current ? `${current.c}-${current.q}` : '';
   const activeForCurrentQuestion = !!(buzzer && buzzer.active && currentKey && buzzer.questionKey === currentKey);
+  const timerActiveForCurrentQuestion = timerIsForCurrentQuestion(data.timer || null, currentKey);
 
-  panel.classList.toggle('hidden', !activeForCurrentQuestion && !buzzer);
+  panel.classList.toggle('hidden', !activeForCurrentQuestion && !buzzer && !timerActiveForCurrentQuestion);
+  renderJoinTimer(data);
 
   if (!selectedTeam) {
     btn.disabled = true;
@@ -2117,6 +2253,41 @@ function renderJoinBuzzer(data) {
   if (buzzer.first && buzzer.first.teamName) {
     status.innerHTML = `Zuerst: <b>${escHtml(buzzer.first.teamName)}</b>`;
   }
+}
+
+
+function renderJoinTimer(data) {
+  const panel = document.getElementById('join-timer-panel');
+  const bar = document.getElementById('join-timer-bar');
+  const text = document.getElementById('join-timer-text');
+  if (!panel || !bar || !text) return;
+  clearInterval(joinTimerInterval);
+  joinTimerInterval = null;
+
+  const current = data.currentQuestion;
+  const currentKey = current ? `${current.c}-${current.q}` : '';
+  const timer = data.timer || null;
+  if (!timerIsForCurrentQuestion(timer, currentKey)) {
+    panel.classList.add('hidden');
+    bar.style.width = '0%';
+    text.textContent = '';
+    return;
+  }
+
+  panel.classList.remove('hidden');
+  const durationMs = Math.max(1, Number(timer.duration || 0) * 1000);
+  const updateBar = () => {
+    const remaining = getTimerRemainingMs(timer);
+    const pct = Math.max(0, Math.min(100, (remaining / durationMs) * 100));
+    bar.style.width = pct + '%';
+    text.textContent = remaining > 0 ? `${Math.ceil(remaining / 1000)} Sek.` : 'Zeit abgelaufen!';
+    if (remaining <= 0) {
+      clearInterval(joinTimerInterval);
+      joinTimerInterval = null;
+    }
+  };
+  updateBar();
+  joinTimerInterval = setInterval(updateBar, 200);
 }
 
 async function playerBuzz() {
@@ -2155,6 +2326,8 @@ window.startHostedBuzzer = startHostedBuzzer;
 window.resetHostedBuzzer = resetHostedBuzzer;
 window.lockHostedBuzzer = lockHostedBuzzer;
 window.unlockHostedBuzzer = unlockHostedBuzzer;
+window.startHostedTimer = startHostedTimer;
+window.stopHostedTimer = stopHostedTimer;
 window.playerBuzz = playerBuzz;
 
 window.handleImageUpload = handleImageUpload;
