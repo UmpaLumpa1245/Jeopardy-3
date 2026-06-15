@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-06-15T20:36:01.394Z",
+  "exported_at": "2026-06-15T20:48:39.425Z",
   "theme": "custom-bg-image",
   "background_image": "images/Minecraft-Kinofilm-Fortsetzung-Sequel-Ankuendigung-Videospiel-Artikelbild-1200x675.webp",
   "board_count": 2,
@@ -78,7 +78,7 @@
           "answer": "Jurassic Park theme",
           "image_url": "",
           "answer_image_url": "",
-          "audio_url": "",
+          "audio_url": "Sound/Jurassic Park.ogg",
           "points": 100,
           "revealed": false
         },
@@ -90,7 +90,7 @@
           "answer": "Sherlock",
           "image_url": "",
           "answer_image_url": "",
-          "audio_url": "",
+          "audio_url": "Sound/Sherlock - BBC - Title Music.mp3",
           "points": 200,
           "revealed": false
         },
@@ -102,7 +102,7 @@
           "answer": "Suicide Squad",
           "image_url": "",
           "answer_image_url": "",
-          "audio_url": "",
+          "audio_url": "Sound/SpotiDown.App - Heathens - Twenty One Pilots.mp3",
           "points": 300,
           "revealed": false
         },
@@ -114,7 +114,7 @@
           "answer": "Better Call Saul",
           "image_url": "",
           "answer_image_url": "",
-          "audio_url": "",
+          "audio_url": "Sound/Better Call Saul.ogg",
           "points": 400,
           "revealed": false
         },
@@ -126,7 +126,7 @@
           "answer": "Der Zauberer von OZ",
           "image_url": "",
           "answer_image_url": "",
-          "audio_url": "",
+          "audio_url": "Sound/judy-garland-somewhere-over-the-rainbow-lyrics_mhM8OTpD.mp3",
           "points": 500,
           "revealed": false
         },
@@ -137,7 +137,7 @@
           "question": "Was sind die Big Three?",
           "answer": "One Piece, Naruto, Bleach",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/One-Piece-Naruto-Bleach.webp",
           "audio_url": "",
           "points": 100,
           "revealed": false
@@ -148,8 +148,8 @@
           "category_name": "Anime",
           "question": "Welcher Anime gewann den Anime of the Year 2021? (Crunchyroll)",
           "answer": "Jujutsu Kaisen",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Screenshot 2026-06-12 030734.png",
+          "answer_image_url": "images/Screenshot 2026-06-12 030432.png",
           "audio_url": "",
           "points": 200,
           "revealed": false
@@ -160,8 +160,8 @@
           "category_name": "Anime",
           "question": "Welcher Charakter ist eine Frau? (Erste Begegnung im Anime)",
           "answer": "Medoki (Unten Rechts)",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Screenshot 2026-06-12 025846.png",
+          "answer_image_url": "images/Screenshot 2026-06-12 030021.png",
           "audio_url": "",
           "points": 300,
           "revealed": false
@@ -172,8 +172,8 @@
           "category_name": "Anime",
           "question": "Was störte Erina Nakiri in dieser Szene aus Food Wars?",
           "answer": "Ihr war es als würde sie ein Bad mit einem westlichen Flachland Gorilla nehmen.",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/985615.webp",
+          "answer_image_url": "images/Screenshot 2026-06-12 032834.png",
           "audio_url": "",
           "points": 400,
           "revealed": false
@@ -197,7 +197,7 @@
           "question": "😈👜",
           "answer": "Der Teufel trägt Prada",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/compose.webp",
           "audio_url": "",
           "points": 100,
           "revealed": false
@@ -209,7 +209,7 @@
           "question": "⬇️💧⛰️🔥💨",
           "answer": "Avatar - Der Herr der Elemente",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/MV5BNTU2OTc4YTUtMmQ5MS00YjIyLThjMTktMzgzN2IzYjdhNmE5XkEyXkFqcGc@._V1_.jpg",
           "audio_url": "",
           "points": 200,
           "revealed": false
@@ -221,7 +221,7 @@
           "question": "🏃‍➡️🍫🏓🦐",
           "answer": "Forrest Gump",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/MV5BNDYwNzVjMTItZmU5YS00YjQ5LTljYjgtMjY2NDVmYWMyNWFmXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
           "audio_url": "",
           "points": 300,
           "revealed": false
@@ -233,7 +233,7 @@
           "question": "👨🏻‍🦱✂️🙌",
           "answer": "Edward mit den Scherenhänden",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/81X1xbM6ZcL.jpg",
           "audio_url": "",
           "points": 400,
           "revealed": false
@@ -245,7 +245,7 @@
           "question": "💀🏫📜🍂",
           "answer": "Der Club der toten Dichter",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/MV5BZTUxYmMzZDEtYjk2YS00MWUzLWIyZjUtNDRjYWI4N2RhY2IzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
           "audio_url": "",
           "points": 500,
           "revealed": false
@@ -256,8 +256,8 @@
           "category_name": "Geoguessr",
           "question": "In welcher Serie befinden wir uns?",
           "answer": "Adventure Time",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Candy_Kingdom.webp",
+          "answer_image_url": "images/X0_69e15b1f00361_2000.webp",
           "audio_url": "",
           "points": 100,
           "revealed": false
@@ -268,8 +268,8 @@
           "category_name": "Geoguessr",
           "question": "In welcher Serie befinden wir uns?",
           "answer": "How I met you mother",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/1d5c9540-b271-4e2e-826c-9a9c2ead2100.png",
+          "answer_image_url": "images/does-every-episode-start-with-kids-v0-vznchvarv0o71.webp",
           "audio_url": "",
           "points": 200,
           "revealed": false
@@ -281,7 +281,7 @@
           "question": "Welche bekannte Fantasy Filmreihe wurde in Neuseeland gedreht?",
           "answer": "Herr der Ringe",
           "image_url": "",
-          "answer_image_url": "",
+          "answer_image_url": "images/MV5BZGFmNDg3ZmMtMmMyMC00NjA5LWFmNGMtYmY2YjFhMDc5YjI1XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
           "audio_url": "",
           "points": 300,
           "revealed": false
@@ -292,8 +292,8 @@
           "category_name": "Geoguessr",
           "question": "In welcher Serie befinden wir uns?",
           "answer": "The Big Bang Theory",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/3d4006a3-bbce-4575-af9b-9a88e195ec17.png",
+          "answer_image_url": "images/maxresdefault.jpg",
           "audio_url": "",
           "points": 400,
           "revealed": false
@@ -304,8 +304,8 @@
           "category_name": "Geoguessr",
           "question": "In welcher Serie befinden wir uns?",
           "answer": "Malcom mittendrin",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/435203a3-14f8-4b49-85a6-b1f77845b5b9.png",
+          "answer_image_url": "images/g9yp2lp0778e1.jpeg",
           "audio_url": "",
           "points": 500,
           "revealed": false
