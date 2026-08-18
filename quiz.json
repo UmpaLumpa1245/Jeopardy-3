@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-08-18T01:12:14.642Z",
+  "exported_at": "2026-08-18T01:14:07.687Z",
   "theme": "custom-bg-image",
   "background_image": "images/Minecraft-Kinofilm-Fortsetzung-Sequel-Ankuendigung-Videospiel-Artikelbild-1200x675.webp",
   "board_count": 1,
@@ -88,7 +88,7 @@
           "category_name": "Crafting Table",
           "question": "Wie craftet man einen Kürbiskuchen?",
           "answer": "",
-          "image_url": "images/Download.png",
+          "image_url": "images/kuchenkürbis.png",
           "answer_image_url": "images/Screenshot 2026-06-14 192315.png",
           "audio_url": "",
           "points": 200,
