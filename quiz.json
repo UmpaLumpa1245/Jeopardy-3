@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-08-18T01:14:10.191Z",
+  "exported_at": "2026-08-18T01:38:00.260Z",
   "theme": "custom-bg-image",
   "background_image": "images/Minecraft-Kinofilm-Fortsetzung-Sequel-Ankuendigung-Videospiel-Artikelbild-1200x675.webp",
   "board_count": 1,
@@ -256,8 +256,8 @@
           "category_name": "Geoguessr",
           "question": "",
           "answer": "",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Bild_2026-08-18_033006306.png",
+          "answer_image_url": "images/Fox_JE1_BE1.webp",
           "audio_url": "",
           "points": 100,
           "revealed": false
@@ -268,8 +268,8 @@
           "category_name": "Geoguessr",
           "question": "",
           "answer": "",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Bild_2026-08-18_032628869.png",
+          "answer_image_url": "images/Sweet_Berry_Bush_Age_3_JE1_BE1.png",
           "audio_url": "",
           "points": 200,
           "revealed": false
@@ -280,8 +280,8 @@
           "category_name": "Geoguessr",
           "question": "",
           "answer": "",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Bild_2026-08-18_032830603.png",
+          "answer_image_url": "images/Sporenblüte_Oberseite.png",
           "audio_url": "",
           "points": 300,
           "revealed": false
@@ -292,8 +292,8 @@
           "category_name": "Geoguessr",
           "question": "",
           "answer": "",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Bild_2026-08-18_033333643.png",
+          "answer_image_url": "images/Gray_Parrot_JE1_BE1.png",
           "audio_url": "",
           "points": 400,
           "revealed": false
@@ -304,8 +304,8 @@
           "category_name": "Geoguessr",
           "question": "",
           "answer": "",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/neu seeds.png",
+          "answer_image_url": "images/Torchflower_Seeds_JE1_BE1.png",
           "audio_url": "",
           "points": 500,
           "revealed": false
