@@ -646,6 +646,11 @@ html body #app.custom-bg-image{
         <button onclick="setTheme('theme-sunset')" class="bg-[#0f1347] rounded p-2">Sunset</button>
         <button onclick="setTheme('theme-forest')" class="bg-[#0f1347] rounded p-2">Forest</button>
         <button onclick="setTheme('theme-retro')" class="bg-[#0f1347] rounded p-2">Retro</button>
+        <div class="mt-2 border-t border-white/15 pt-2">
+          <p class="text-[11px] text-yellow-200 mb-1">Hintergrund aus GitHub / per Dateipfad</p>
+          <input id="background-url-input" type="text" class="w-full bg-[#0f1347] border border-white/20 rounded p-2 text-xs text-white" placeholder="z.B. ./images/hintergrund.jpg">
+          <button type="button" onclick="applyBackgroundUrl()" class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded p-2 text-sm font-bold mt-2">Pfad / URL übernehmen</button>
+        </div>
         <label class="cursor-pointer bg-[#f5c518] text-[#0a0e2a] rounded p-2 text-center font-bold mt-2">
           Eigenes Bild wählen
           <input type="file" accept="image/*" class="hidden" onchange="handleBackgroundUpload(this)">
@@ -1562,7 +1567,32 @@ function setTheme(themeName, closePanel = true) {
 }
 
 function toggleThemePanel() {
-  document.getElementById('theme-panel').classList.toggle('hidden');
+  const panel = document.getElementById('theme-panel');
+  const input = document.getElementById('background-url-input');
+  if (!panel) return;
+
+  // Beim Öffnen einen bereits gespeicherten GitHub-/Web-Pfad wieder anzeigen.
+  // Hochgeladene lokale Bilder sind data:-URLs und werden absichtlich nicht
+  // in das Textfeld geschrieben.
+  if (panel.classList.contains('hidden') && input) {
+    const savedBg = localStorage.getItem(BG_IMAGE_KEY) || '';
+    input.value = savedBg.startsWith('data:') ? '' : savedBg;
+  }
+
+  panel.classList.toggle('hidden');
+}
+
+function applyBackgroundUrl() {
+  const input = document.getElementById('background-url-input');
+  const url = (input?.value || '').trim();
+
+  if (!url) {
+    alert('Bitte einen Hintergrund-Pfad oder eine Bild-URL eingeben, z.B. ./images/hintergrund.jpg');
+    return;
+  }
+
+  localStorage.setItem(BG_IMAGE_KEY, url);
+  setTheme('custom-bg-image');
 }
 
 async function handleBackgroundUpload(input) {
