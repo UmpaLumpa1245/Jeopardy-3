@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-08-21T17:04:33.617Z",
+  "exported_at": "2026-11-01T19:40:19.226Z",
   "theme": "custom-bg-image",
   "background_image": "images/maxresdefault.jpg",
   "board_count": 1,
@@ -74,8 +74,8 @@
           "category_index": 1,
           "question_index": 0,
           "category_name": "K/D/A",
-          "question": "",
-          "answer": "",
+          "question": "Welcher E-Sportler hat bei all diesen Vereinen gespielt?",
+          "answer": "♥️ BrokenBlade  ♥️",
           "image_url": "",
           "answer_image_url": "",
           "audio_url": "",
