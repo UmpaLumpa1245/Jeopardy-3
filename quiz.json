@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-11-01T20:53:30.757Z",
+  "exported_at": "2026-11-02T21:46:48.454Z",
   "theme": "custom-bg-image",
   "background_image": "images/maxresdefault.jpg",
   "board_count": 1,
@@ -196,8 +196,8 @@
           "category_name": "Bingo",
           "question": "Welcher E-Sportler hat bei all diesen Vereinen gespielt?",
           "answer": "♥️ BrokenBlade  ♥️",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Teams 1.png",
+          "answer_image_url": "images/iz8FPoXv1ifJ9v5x.jpg",
           "audio_url": "",
           "points": 100,
           "revealed": false
@@ -208,8 +208,8 @@
           "category_name": "Bingo",
           "question": "Welcher Fußballer ist gesucht?",
           "answer": "Florian Wirtz",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Teams 2.png",
+          "answer_image_url": "images/Florian Witz.png",
           "audio_url": "",
           "points": 200,
           "revealed": false
@@ -220,8 +220,8 @@
           "category_name": "Bingo",
           "question": "Welcher Basketballer ist gesucht?",
           "answer": "Shaquille O’Neal",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/Teams 3.png",
+          "answer_image_url": "images/st,small,507x507-pad,600x600,f8f8f8.jpg",
           "audio_url": "",
           "points": 300,
           "revealed": false
@@ -232,8 +232,8 @@
           "category_name": "Bingo",
           "question": "Welcher E-Sportler hat in den Jahren 2024 bis 2026 diese Turnier Ergebnisse erzielt?",
           "answer": "Chovy",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/teams 4.png",
+          "answer_image_url": "images/ch.jfif",
           "audio_url": "",
           "points": 400,
           "revealed": false
@@ -244,8 +244,8 @@
           "category_name": "Bingo",
           "question": "Nenne mir alle Formel 1 Teams für die Michael Schumacher gefahren ist?",
           "answer": "1991 Jordan, 1991–1995 Benetton, 1996–2006 Ferrari, 2010–2012 Mercedes",
-          "image_url": "",
-          "answer_image_url": "",
+          "image_url": "images/michael-schumacher-mp3-carlo-brantsen.webp",
+          "answer_image_url": "images/Teams 5.png",
           "audio_url": "",
           "points": 500,
           "revealed": false
