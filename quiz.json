@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-11-02T21:46:48.450Z",
+  "exported_at": "2026-11-02T21:48:22.886Z",
   "theme": "custom-bg-image",
   "background_image": "images/maxresdefault.jpg",
   "board_count": 1,
@@ -133,7 +133,7 @@
         {
           "category_index": 2,
           "question_index": 0,
-          "category_name": "Video Games",
+          "category_name": "Zwillinge",
           "question": "",
           "answer": "",
           "image_url": "",
@@ -145,7 +145,7 @@
         {
           "category_index": 2,
           "question_index": 1,
-          "category_name": "Video Games",
+          "category_name": "Zwillinge",
           "question": "",
           "answer": "",
           "image_url": "",
@@ -157,7 +157,7 @@
         {
           "category_index": 2,
           "question_index": 2,
-          "category_name": "Video Games",
+          "category_name": "Zwillinge",
           "question": "",
           "answer": "",
           "image_url": "",
@@ -169,7 +169,7 @@
         {
           "category_index": 2,
           "question_index": 3,
-          "category_name": "Video Games",
+          "category_name": "Zwillinge",
           "question": "",
           "answer": "",
           "image_url": "",
@@ -181,7 +181,7 @@
         {
           "category_index": 2,
           "question_index": 4,
-          "category_name": "Video Games",
+          "category_name": "Zwillinge",
           "question": "",
           "answer": "",
           "image_url": "",
